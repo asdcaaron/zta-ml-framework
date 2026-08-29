@@ -1,0 +1,7 @@
+{
+  "test_accuracy": 0.777,
+  "weighted_f1": 0.7578,
+  "epochs_trained": 50,
+  "final_val_loss": 0.1785,
+  "final_val_acc": 0.9773
+}

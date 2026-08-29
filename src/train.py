@@ -19,7 +19,11 @@ Usage:
 
 import argparse
 import os
+import sys
 import json
+
+# Allow running from project root: python src/train.py
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -135,8 +139,8 @@ def train(args):
         'test_accuracy':   round(acc, 4),
         'weighted_f1':     round(f1, 4),
         'epochs_trained':  len(history.history['loss']),
-        'final_val_loss':  round(history.history['val_loss'][-1], 4),
-        'final_val_acc':   round(history.history['val_accuracy'][-1], 4),
+        'final_val_loss':  round(float(history.history['val_loss'][-1]), 4),
+        'final_val_acc':   round(float(history.history.get('val_accuracy', [0])[-1]), 4),
     }
     with open(os.path.join(args.out, 'training_results.json'), 'w') as f:
         json.dump(results, f, indent=2)
@@ -155,11 +159,12 @@ def train(args):
 
 def _plot_history(history, out_dir: str):
     """Save accuracy and loss training curves."""
+    hist = history.history
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     # Accuracy
-    axes[0].plot(history.history['accuracy'],     label='Train Accuracy')
-    axes[0].plot(history.history['val_accuracy'], label='Val Accuracy')
+    axes[0].plot(hist.get('accuracy', []),     label='Train Accuracy')
+    axes[0].plot(hist.get('val_accuracy', []), label='Val Accuracy')
     axes[0].set_title('Model Accuracy')
     axes[0].set_xlabel('Epoch')
     axes[0].set_ylabel('Accuracy')
@@ -167,8 +172,8 @@ def _plot_history(history, out_dir: str):
     axes[0].grid(True)
 
     # Loss
-    axes[1].plot(history.history['loss'],     label='Train Loss')
-    axes[1].plot(history.history['val_loss'], label='Val Loss')
+    axes[1].plot(hist.get('loss', []),     label='Train Loss')
+    axes[1].plot(hist.get('val_loss', []), label='Val Loss')
     axes[1].set_title('Model Loss')
     axes[1].set_xlabel('Epoch')
     axes[1].set_ylabel('Loss')

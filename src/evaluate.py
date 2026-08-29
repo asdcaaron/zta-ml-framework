@@ -22,6 +22,10 @@ Usage:
 import argparse
 import json
 import os
+import sys
+
+# Allow running from project root: python src/evaluate.py
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 import time
 import numpy as np
 import pandas as pd
@@ -175,12 +179,14 @@ def plot_comparison_bar(df: pd.DataFrame, out_dir: str):
 
     for ax, metric, color in zip(axes, metrics, colors):
         vals = df.set_index('System')[metric].astype(float)
-        bars = ax.bar(vals.index, vals.values,
+        x_pos = range(len(vals))
+        bars = ax.bar(x_pos, vals.values,
                       color=[color] * len(vals), edgecolor='black', width=0.5)
         ax.set_title(metric, fontsize=13, fontweight='bold')
         ax.set_ylabel(metric)
         ax.set_ylim(0, 1.1)
-        ax.set_xticklabels(vals.index, rotation=15, ha='right', fontsize=9)
+        ax.set_xticks(list(x_pos))
+        ax.set_xticklabels(list(vals.index), rotation=15, ha='right', fontsize=9)
         for bar, val in zip(bars, vals.values):
             ax.text(bar.get_x() + bar.get_width() / 2,
                     bar.get_height() + 0.02,

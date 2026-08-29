@@ -146,11 +146,9 @@ def compile_model(model: Model,
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
         loss='sparse_categorical_crossentropy',
-        metrics=[
-            'accuracy',
-            tf.keras.metrics.Precision(name='precision'),
-            tf.keras.metrics.Recall(name='recall'),
-        ]
+        metrics=['accuracy']
+        # Precision/Recall computed post-training via sklearn
+        # (Keras 3 built-in P/R metrics conflict with sparse multi-class labels)
     )
     return model
 
