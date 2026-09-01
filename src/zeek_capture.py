@@ -46,7 +46,16 @@ log = logging.getLogger(__name__)
 # ── Configuration ─────────────────────────────────────────────────────────────
 API_URL     = os.getenv('API_URL',     'http://localhost:5000/predict')
 AUDIT_LOG   = os.getenv('AUDIT_LOG',   'data/audit.jsonl')
-ZEEK_BIN    = os.getenv('ZEEK_BIN',    'zeek')          # path to zeek binary
+
+# Zeek execution mode:
+#   'docker' — runs zeek/zeek:latest container (default, what we use)
+#   'native' — runs zeek binary directly (set ZEEK_MODE=native if installed)
+ZEEK_MODE   = os.getenv('ZEEK_MODE',   'docker')
+ZEEK_BIN    = os.getenv('ZEEK_BIN',    'zeek')
+ZEEK_IMAGE  = os.getenv('ZEEK_IMAGE',  'zeek/zeek:latest')
+
+# Absolute path to project root — needed for Docker volume mounts
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # ── NSL-KDD feature defaults (for fields Zeek cannot provide directly) ────────
 FEATURE_DEFAULTS = {
@@ -145,13 +154,29 @@ def parse_conn_log(log_path: str):
 def run_zeek_live(interface: str, duration: int, output_dir: str = 'logs'):
     """
     Start a Zeek live capture on `interface` for `duration` seconds.
-    Writes conn.log to `output_dir`.
+    Supports both Docker and native Zeek modes.
     Returns path to generated conn.log.
     """
     os.makedirs(output_dir, exist_ok=True)
-    log.info(f"Starting Zeek on interface '{interface}' "
-             f"for {duration}s → '{output_dir}/'")
-    cmd = [ZEEK_BIN, '-i', interface, '-C', f'Log::default_logdir={output_dir}']
+    abs_output = os.path.abspath(output_dir)
+
+    log.info(f"Starting Zeek ({ZEEK_MODE} mode) on interface '{interface}' "
+             f"for {duration}s ...")
+
+    if ZEEK_MODE == 'docker':
+        # Docker requires --network host to capture host interfaces
+        cmd = [
+            'docker', 'run', '--rm',
+            '--network', 'host',
+            '-v', f'{PROJECT_ROOT}:/project',
+            '-w', '/project/logs',
+            ZEEK_IMAGE,
+            'zeek', '-i', interface, '-C'
+        ]
+    else:
+        cmd = [ZEEK_BIN, '-i', interface, '-C',
+               f'Log::default_logdir={abs_output}']
+
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL)
     try:
@@ -159,6 +184,7 @@ def run_zeek_live(interface: str, duration: int, output_dir: str = 'logs'):
     finally:
         proc.terminate()
         proc.wait()
+
     conn_log = os.path.join(output_dir, 'conn.log')
     log.info(f"Capture complete. Log: {conn_log}")
     return conn_log
@@ -167,14 +193,31 @@ def run_zeek_live(interface: str, duration: int, output_dir: str = 'logs'):
 def run_zeek_pcap(pcap_path: str, output_dir: str = 'logs'):
     """
     Run Zeek offline analysis on a pcap file.
+    Supports both Docker and native Zeek modes.
     Returns path to generated conn.log.
     """
     os.makedirs(output_dir, exist_ok=True)
-    log.info(f"Running Zeek on pcap '{pcap_path}'...")
-    cmd = [ZEEK_BIN, '-r', pcap_path,
-           f'Log::default_logdir={output_dir}']
+    abs_pcap   = os.path.abspath(pcap_path)
+    abs_output = os.path.abspath(output_dir)
+
+    log.info(f"Running Zeek ({ZEEK_MODE} mode) on pcap '{pcap_path}'...")
+
+    if ZEEK_MODE == 'docker':
+        # Mount the project root so Zeek can read the pcap and write logs
+        cmd = [
+            'docker', 'run', '--rm',
+            '-v', f'{PROJECT_ROOT}:/project',
+            '-w', '/project/logs',
+            ZEEK_IMAGE,
+            'zeek', '-r', f'/project/{os.path.relpath(abs_pcap, PROJECT_ROOT)}'
+        ]
+    else:
+        cmd = [ZEEK_BIN, '-r', abs_pcap,
+               f'Log::default_logdir={abs_output}']
+
     subprocess.run(cmd, check=True,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     conn_log = os.path.join(output_dir, 'conn.log')
     log.info(f"Zeek analysis complete. Log: {conn_log}")
     return conn_log

@@ -93,6 +93,104 @@ def _run_inference(sample: np.ndarray) -> dict:
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+@app.route('/', methods=['GET'])
+def dashboard():
+    """Browser-friendly dashboard showing API status and endpoints."""
+    model_status = "Loaded" if model is not None else "NOT LOADED"
+    color = "#2ecc71" if model is not None else "#e74c3c"
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>ZTA + ML Risk Scoring API</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; max-width: 860px;
+                   margin: 40px auto; padding: 0 20px; background: #f5f5f5; }}
+            h1   {{ color: #2c3e50; }}
+            h2   {{ color: #34495e; border-bottom: 2px solid #3498db;
+                   padding-bottom: 6px; }}
+            .badge {{ display: inline-block; padding: 4px 12px;
+                     border-radius: 12px; color: white;
+                     background: {color}; font-weight: bold; }}
+            table {{ border-collapse: collapse; width: 100%;
+                    background: white; border-radius: 8px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.1); }}
+            th    {{ background: #3498db; color: white;
+                    padding: 10px 14px; text-align: left; }}
+            td    {{ padding: 9px 14px; border-bottom: 1px solid #eee; }}
+            tr:last-child td {{ border-bottom: none; }}
+            code  {{ background: #ecf0f1; padding: 2px 6px;
+                    border-radius: 4px; font-size: 0.9em; }}
+            .box  {{ background: white; border-radius: 8px; padding: 16px 20px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.1); }}
+        </style>
+    </head>
+    <body>
+        <h1>ZTA + ML Risk Scoring API</h1>
+        <p><strong>Author:</strong> Okado Aaron Obbo &mdash; S24B23/015<br>
+           <strong>Uganda Christian University</strong> &mdash;
+           Systems, Infrastructure &amp; Cybersecurity</p>
+
+        <div class="box">
+            <strong>Model Status:</strong>
+            <span class="badge">{model_status}</span>
+            &nbsp;&nbsp;
+            <strong>Loaded at:</strong> {model_load_time or 'N/A'}
+            &nbsp;&nbsp;
+            <strong>Input:</strong> (41, 1) NSL-KDD features
+            &nbsp;&nbsp;
+            <strong>Classes:</strong> Normal, DoS, Probe, R2L, U2R
+        </div>
+
+        <h2>Available Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td>GET</td>
+                <td><a href="/health"><code>/health</code></a></td>
+                <td>API liveness check</td></tr>
+            <tr><td>GET</td>
+                <td><a href="/model/info"><code>/model/info</code></a></td>
+                <td>Model metadata and risk thresholds</td></tr>
+            <tr><td>POST</td>
+                <td><code>/predict</code></td>
+                <td>Score a single traffic connection (JSON body)</td></tr>
+            <tr><td>POST</td>
+                <td><code>/predict/batch</code></td>
+                <td>Score multiple connections in one request</td></tr>
+        </table>
+
+        <h2>Quick Test — POST /predict</h2>
+        <div class="box">
+            <p>Paste this into PowerShell to score a connection:</p>
+            <pre><code>$body = '{{\"features\": {{\"duration\": 0, \"protocol_type\": \"tcp\",
+  \"service\": \"http\", \"flag\": \"SF\",
+  \"src_bytes\": 232, \"dst_bytes\": 8153}}}}'
+Invoke-RestMethod -Uri http://127.0.0.1:5000/predict `
+  -Method POST -Body $body -ContentType \"application/json\"</code></pre>
+        </div>
+
+        <h2>Risk Score Actions</h2>
+        <table>
+            <tr><th>Risk Score</th><th>Action</th><th>Meaning</th></tr>
+            <tr><td>&gt; 0.8</td>
+                <td style="color:#e74c3c"><strong>BLOCK</strong></td>
+                <td>High confidence attack — session terminated</td></tr>
+            <tr><td>0.5 – 0.8</td>
+                <td style="color:#e67e22"><strong>CHALLENGE_MFA</strong></td>
+                <td>Suspicious — re-authentication required</td></tr>
+            <tr><td>0.3 – 0.5</td>
+                <td style="color:#f1c40f"><strong>MONITOR</strong></td>
+                <td>Anomalous — flagged and watched</td></tr>
+            <tr><td>&lt; 0.3</td>
+                <td style="color:#2ecc71"><strong>ALLOW</strong></td>
+                <td>Normal traffic — permitted</td></tr>
+        </table>
+    </body>
+    </html>
+    """, 200
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Liveness check for load balancers / k8s probes."""
