@@ -28,7 +28,7 @@ from tensorflow.keras import layers, Model, regularizers
 
 # ── Model definition ──────────────────────────────────────────────────────────
 
-def build_cnn_gru_model(input_shape: tuple = (41, 1),
+def build_cnn_gru_model(input_shape: tuple = (40, 1),
                         num_classes: int = 5,
                         dropout_rate: float = 0.3,
                         l2_reg: float = 1e-4) -> Model:
@@ -240,7 +240,7 @@ if __name__ == '__main__':
 
     # Dummy forward pass
     import numpy as np
-    dummy = np.random.rand(4, 41, 1).astype(np.float32)
+    dummy = np.random.rand(4, 40, 1).astype(np.float32)
     preds = model.predict(dummy, verbose=0)
     print(f"\nDummy prediction shape: {preds.shape}")
     print(f"Sample risk score: {score_to_risk(preds[0])}")

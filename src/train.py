@@ -94,7 +94,9 @@ def train(args):
     print("\n" + "=" * 60)
     print("  STEP 2: Building CNN-GRU Model")
     print("=" * 60)
-    model = build_cnn_gru_model(input_shape=(41, 1), num_classes=5)
+    model = build_cnn_gru_model(
+        input_shape=(X_train.shape[1], 1), num_classes=5
+    )
     model = compile_model(model, learning_rate=args.lr)
     model.summary()
 

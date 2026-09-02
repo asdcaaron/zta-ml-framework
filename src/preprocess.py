@@ -38,9 +38,19 @@ COLUMNS = [
     'label', 'difficulty'
 ]
 
-FEATURE_COLS = [c for c in COLUMNS if c not in ['label', 'difficulty']]
-
 CATEGORICAL_COLS = ['protocol_type', 'service', 'flag']
+
+# ── Zero-variance feature to drop ─────────────────────────────────────────────
+# num_outbound_cmds is constant 0 across all samples — contributes nothing
+DROP_COLS = ['num_outbound_cmds']
+
+# ── Features with extreme outliers — use log1p scaling instead of MinMax ──────
+# These have max values millions of times above their mean
+LOG_SCALE_COLS = ['duration', 'src_bytes', 'dst_bytes',
+                  'num_compromised', 'num_root']
+
+# Must be defined after DROP_COLS
+FEATURE_COLS = [c for c in COLUMNS if c not in ['label', 'difficulty'] + DROP_COLS]
 
 # ── Attack-to-category mapping (5-class problem) ──────────────────────────────
 ATTACK_MAP = {
@@ -82,6 +92,11 @@ def load_and_preprocess(train_path: str,
     """
     Load NSL-KDD train and test CSVs, encode, scale, and reshape.
 
+    Noise handling applied:
+      1. Drop zero-variance feature (num_outbound_cmds)
+      2. Log1p-scale extreme-outlier features before MinMax scaling
+      3. Class weights (handled in train.py) address imbalance
+
     Parameters
     ----------
     train_path     : path to KDDTrain+.csv
@@ -91,9 +106,11 @@ def load_and_preprocess(train_path: str,
 
     Returns
     -------
-    X_train, X_test : np.ndarray of shape (N, 41, 1)
+    X_train, X_test : np.ndarray of shape (N, n_features, 1)
     y_train, y_test : np.ndarray of integer class labels
     """
+    n_features = len(FEATURE_COLS)
+
     print("[preprocess] Loading data...")
     train_df = pd.read_csv(train_path, names=COLUMNS)
     test_df  = pd.read_csv(test_path,  names=COLUMNS)
@@ -102,27 +119,37 @@ def load_and_preprocess(train_path: str,
     train_df['label'] = train_df['label'].str.strip().str.lower()
     test_df['label']  = test_df['label'].str.strip().str.lower()
 
-    train_df['label'] = train_df['label'].map(
-        lambda x: ATTACK_MAP.get(x, 0)
-    )
-    test_df['label'] = test_df['label'].map(
-        lambda x: ATTACK_MAP.get(x, 0)
-    )
+    train_df['label'] = train_df['label'].map(lambda x: ATTACK_MAP.get(x, 0))
+    test_df['label']  = test_df['label'].map(lambda x: ATTACK_MAP.get(x, 0))
+
+    # ── Fix 1: Drop zero-variance features ────────────────────────────────
+    # num_outbound_cmds is constant 0 — no information content
+    print(f"[preprocess] Dropping zero-variance features: {DROP_COLS}")
+    train_df = train_df.drop(columns=DROP_COLS, errors='ignore')
+    test_df  = test_df.drop(columns=DROP_COLS,  errors='ignore')
+
+    # ── Fix 2: Log1p-scale extreme outlier features ────────────────────────
+    # Compresses billion-scale outliers into a manageable range
+    # log1p(x) = log(1+x) — handles zero values safely
+    print(f"[preprocess] Applying log1p to outlier features: {LOG_SCALE_COLS}")
+    for col in LOG_SCALE_COLS:
+        if col in train_df.columns:
+            train_df[col] = np.log1p(train_df[col].clip(lower=0))
+            test_df[col]  = np.log1p(test_df[col].clip(lower=0))
 
     # ── Encode categorical columns ─────────────────────────────────────────
     encoders = {}
     for col in CATEGORICAL_COLS:
         le = LabelEncoder()
         train_df[col] = le.fit_transform(train_df[col].astype(str))
-        # Handle unseen categories in test set
-        test_df[col] = test_df[col].astype(str).map(
+        test_df[col]  = test_df[col].astype(str).map(
             lambda x, le=le: le.transform([x])[0]
             if x in le.classes_ else 0
         )
         encoders[col] = le
 
-    # ── Scale numerical features ───────────────────────────────────────────
-    scaler = MinMaxScaler()
+    # ── Scale all features to [0, 1] ──────────────────────────────────────
+    scaler  = MinMaxScaler()
     X_train = scaler.fit_transform(train_df[FEATURE_COLS].values)
     X_test  = scaler.transform(test_df[FEATURE_COLS].values)
 
@@ -130,17 +157,20 @@ def load_and_preprocess(train_path: str,
     y_test  = test_df['label'].values.astype(np.int32)
 
     # ── Reshape for CNN-GRU: (samples, timesteps, channels) ───────────────
-    X_train = X_train.reshape(-1, 41, 1)
-    X_test  = X_test.reshape(-1, 41, 1)
+    X_train = X_train.reshape(-1, n_features, 1)
+    X_test  = X_test.reshape(-1, n_features, 1)
 
     # ── Save artifacts ─────────────────────────────────────────────────────
     if save_artifacts:
         os.makedirs(artifacts_dir, exist_ok=True)
-        joblib.dump(scaler,   os.path.join(artifacts_dir, 'scaler.pkl'))
-        joblib.dump(encoders, os.path.join(artifacts_dir, 'encoders.pkl'))
+        joblib.dump(scaler,      os.path.join(artifacts_dir, 'scaler.pkl'))
+        joblib.dump(encoders,    os.path.join(artifacts_dir, 'encoders.pkl'))
+        joblib.dump(n_features,  os.path.join(artifacts_dir, 'n_features.pkl'))
         print(f"[preprocess] Artifacts saved to '{artifacts_dir}/'")
 
     print(f"[preprocess] Train: {X_train.shape}, Test: {X_test.shape}")
+    print(f"[preprocess] Features used: {n_features} "
+          f"(dropped {len(DROP_COLS)} zero-variance)")
     print(f"[preprocess] Class distribution (train): "
           f"{ {CLASS_NAMES[k]: int(v) for k, v in zip(*np.unique(y_train, return_counts=True))} }")
 
