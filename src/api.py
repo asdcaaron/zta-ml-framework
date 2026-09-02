@@ -21,10 +21,20 @@ Usage:
 """
 
 import os
+import sys
 import time
 import logging
 import numpy as np
+
+# Allow running from project root: python src/api.py
+sys.path.insert(0, os.path.dirname(__file__))
+
+# Silence TensorFlow logs before importing tf
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL']  = '3'
+
 import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 
@@ -61,7 +71,9 @@ def load_model():
     model_load_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     log.info("Model loaded successfully.")
 
-load_model()
+# Load model in a background thread so Flask starts immediately
+import threading
+threading.Thread(target=load_model, daemon=True).start()
 
 # ── Helper ────────────────────────────────────────────────────────────────────
 

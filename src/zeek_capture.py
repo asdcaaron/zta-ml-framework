@@ -31,7 +31,7 @@ import logging
 import os
 import subprocess
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -234,7 +234,7 @@ def score_feature(features: dict, timeout: float = 2.0) -> Optional[dict]:
         resp = requests.post(
             API_URL,
             json={'features': features},
-            timeout=timeout
+            timeout=10.0
         )
         resp.raise_for_status()
         return resp.json()
@@ -273,7 +273,7 @@ def process_log(conn_log_path: str):
         counts[action] = counts.get(action, 0) + 1
 
         audit_record = {
-            'timestamp':      datetime.utcnow().isoformat() + 'Z',
+            'timestamp':      datetime.now(timezone.utc).isoformat(),
             'connection_id':  total,
             'risk_score':     result.get('risk_score'),
             'classification': result.get('classification'),
