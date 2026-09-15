@@ -1,21 +1,17 @@
 """
 evaluate.py
 -----------
-Three-way comparative evaluation:
-  System A — Legacy VPN (OpenVPN)   : perimeter-based, no ML
-  System B — ZTA Only               : Zero Trust, no ML
-  System C — ZTA + ML (Proposed)    : Zero Trust + CNN-GRU
+Four-way comparative evaluation for the Risk-Adaptive ZTA framework:
 
-For each system the script:
-  1. Loads the NSL-KDD test set
-  2. Simulates detection behaviour per system type
-  3. Computes accuracy, precision, recall, F1, FPR, response time
-  4. Produces comparison tables and plots
+  System A — Legacy VPN (OpenVPN)        : perimeter-based, no ML
+  System B — ZTA Only                    : Zero Trust, no ML
+  System C — ZTA + CNN-GRU (Supervised)  : Zero Trust + known attack classifier
+  System D — ZTA + Autoencoder (Self-Supervised) : Zero Trust + zero-day detector
 
 Usage:
     python src/evaluate.py
-    python src/evaluate.py --test data/NSL_KDD_Test.csv \
-                           --model data/cnn_gru_model.h5 \
+    python src/evaluate.py --test data/NSL_KDD_Test.csv \\
+                           --model data/cnn_gru_model.keras \\
                            --out   data/results
 """
 
@@ -41,6 +37,7 @@ from sklearn.metrics import (
 )
 
 from preprocess import load_and_preprocess, CLASS_NAMES
+from autoencoder import load_autoencoder, predict_anomaly
 
 # ── Attack scenarios tested ───────────────────────────────────────────────────
 SCENARIOS = ['DoS', 'Probe', 'R2L', 'U2R']
@@ -82,12 +79,9 @@ SYSTEM_PROFILES = {
         'micro_segmentation': True,
         'continuous_auth': True,
     },
-    'ZTA + ML (Proposed)': {
-        'description': 'Hybrid Zero Trust + CNN-GRU anomaly detection. '
-                       'Real-time ML-driven risk scoring on all traffic.',
-        # Uses actual trained CNN-GRU model predictions — not simulated.
-        # Model trained on NSL-KDD achieves 77.7% test accuracy with
-        # strong DoS detection (F1=0.87) and low FPR (3.67%).
+    'ZTA + CNN-GRU (Supervised)': {
+        'description': 'Zero Trust + supervised CNN-GRU classifier. '
+                       'Classifies known attack types in real time.',
         'detection_noise': 0.04,
         'false_positive_rate_base': 0.03,
         'avg_response_time_sec': 1.8,
@@ -95,6 +89,19 @@ SYSTEM_PROFILES = {
         'encrypted_traffic_detection': True,
         'micro_segmentation': True,
         'continuous_auth': True,
+        'zero_day_detection': False,
+    },
+    'ZTA + Autoencoder (Self-Supervised)': {
+        'description': 'Zero Trust + self-supervised autoencoder. '
+                       'Detects zero-day anomalies without attack labels.',
+        'detection_noise': 0.04,
+        'false_positive_rate_base': 0.05,
+        'avg_response_time_sec': 1.5,
+        'lateral_movement_blocked': True,
+        'encrypted_traffic_detection': True,
+        'micro_segmentation': True,
+        'continuous_auth': True,
+        'zero_day_detection': True,
     },
 }
 
@@ -159,6 +166,7 @@ def compute_metrics(system_name: str,
         'Encrypted Traffic Detect':  profile['encrypted_traffic_detection'],
         'Micro-Segmentation':        profile['micro_segmentation'],
         'Continuous Auth':           profile['continuous_auth'],
+        'Zero-Day Detection':        profile.get('zero_day_detection', False),
         'TP': int(tp), 'FP': int(fp),
         'TN': int(tn), 'FN': int(fn),
     }
@@ -206,7 +214,7 @@ def plot_comparison_bar(df: pd.DataFrame, out_dir: str):
                     f'{val:.3f}', ha='center', fontsize=9)
         ax.grid(axis='y', linestyle='--', alpha=0.5)
 
-    plt.suptitle('System Comparison: Legacy VPN vs ZTA vs ZTA+ML',
+    plt.suptitle('Risk-Adaptive ZTA: System Comparison',
                  fontsize=14, fontweight='bold', y=1.02)
     plt.tight_layout()
     path = os.path.join(out_dir, 'comparison_bar.png')
@@ -218,19 +226,23 @@ def plot_comparison_bar(df: pd.DataFrame, out_dir: str):
 def plot_confusion_matrices(systems_preds: dict,
                             y_true: np.ndarray,
                             out_dir: str):
-    """Plot confusion matrices for all three systems side by side."""
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    """Plot confusion matrices for all systems."""
+    n = len(systems_preds)
+    fig, axes = plt.subplots(1, n, figsize=(5 * n, 5))
+    if n == 1:
+        axes = [axes]
     labels = ['Normal', 'Attack']
 
     for ax, (name, y_pred) in zip(axes, systems_preds.items()):
         cm = confusion_matrix(y_true, y_pred)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=labels, yticklabels=labels, ax=ax)
-        ax.set_title(name, fontsize=11, fontweight='bold')
+        ax.set_title(name, fontsize=9, fontweight='bold')
         ax.set_xlabel('Predicted')
         ax.set_ylabel('Actual')
 
-    plt.suptitle('Confusion Matrices', fontsize=13, fontweight='bold')
+    plt.suptitle('Confusion Matrices — Risk-Adaptive ZTA Framework',
+                 fontsize=13, fontweight='bold')
     plt.tight_layout()
     path = os.path.join(out_dir, 'confusion_matrices.png')
     plt.savefig(path, dpi=150)
@@ -246,7 +258,7 @@ def parse_args():
     )
     parser.add_argument('--train', default='data/NSL_KDD_Train.csv')
     parser.add_argument('--test',  default='data/NSL_KDD_Test.csv')
-    parser.add_argument('--model', default='data/cnn_gru_model.h5')
+    parser.add_argument('--model', default='data/cnn_gru_model.keras')
     parser.add_argument('--out',   default='data/results')
     parser.add_argument('--seed',  type=int, default=42)
     return parser.parse_args()
@@ -270,13 +282,34 @@ def run_evaluation(args):
     for system_name, profile in SYSTEM_PROFILES.items():
         print(f"\n[evaluate] Evaluating: {system_name}")
 
-        if system_name == 'ZTA + ML (Proposed)':
-            # Use actual model predictions
+        if system_name == 'ZTA + CNN-GRU (Supervised)':
+            # Use actual CNN-GRU model predictions
             try:
                 y_pred = evaluate_model(args.model, X_test, y_test)
                 print("  >> Using trained CNN-GRU model predictions")
             except FileNotFoundError as e:
-                print(f"  → {e}")
+                print(f"  >> {e}")
+                print("  >> Falling back to simulation")
+                y_pred = simulate_predictions(
+                    y_test, profile['detection_noise'],
+                    profile['false_positive_rate_base'], rng
+                )
+
+        elif system_name == 'ZTA + Autoencoder (Self-Supervised)':
+            # Use actual autoencoder predictions
+            ae_model_path = os.path.join(
+                os.path.dirname(args.model), 'autoencoder_model.keras'
+            )
+            try:
+                ae, enc, threshold = load_autoencoder(
+                    os.path.dirname(args.model)
+                )
+                X_flat = X_test.reshape(X_test.shape[0], -1)
+                _, is_anomaly, _ = predict_anomaly(ae, X_flat, threshold)
+                y_pred = is_anomaly.astype(int)
+                print("  >> Using trained Autoencoder predictions (self-supervised)")
+            except FileNotFoundError as e:
+                print(f"  >> {e}")
                 print("  >> Falling back to simulation")
                 y_pred = simulate_predictions(
                     y_test, profile['detection_noise'],
@@ -311,7 +344,7 @@ def run_evaluation(args):
     print("=" * 70)
     summary_cols = ['System', 'Accuracy', 'F1 Score',
                     'False Positive Rate', 'Avg Response Time',
-                    'Lateral Movement Blocked']
+                    'Lateral Movement Blocked', 'Zero-Day Detection']
     print(df[summary_cols].to_string(index=False))
     print("=" * 70)
 

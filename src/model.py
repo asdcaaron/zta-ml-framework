@@ -153,7 +153,7 @@ def compile_model(model: Model,
     return model
 
 
-def get_callbacks(checkpoint_path: str = 'data/best_model.h5',
+def get_callbacks(checkpoint_path: str = 'data/best_model.keras',
                   patience_es: int = 10,
                   patience_lr: int = 5) -> list:
     """

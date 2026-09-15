@@ -1,20 +1,29 @@
 """
 train.py
 --------
-End-to-end training script for the CNN-GRU intrusion detection model.
+End-to-end training script for the Risk-Adaptive ZTA framework.
 
-Steps:
-  1. Load and preprocess the NSL-KDD dataset
-  2. Build and compile the CNN-GRU model
-  3. Train with early stopping and LR scheduling
-  4. Evaluate on test set and print classification report
-  5. Save the trained model and training history
+Trains two complementary models:
+
+  Model 1 — CNN-GRU (Supervised)
+    Classifies KNOWN attack types: Normal, DoS, Probe, R2L, U2R
+    Trained on all labelled NSL-KDD samples with class weighting
+
+  Model 2 — Autoencoder (Self-Supervised)
+    Detects UNKNOWN / zero-day anomalies without any attack labels
+    Trained on NORMAL traffic only — learns to reconstruct normal patterns
+    High reconstruction error at inference = anomaly
+
+Together they form the dual-layer Risk-Adaptive detection system:
+  CNN-GRU     → known attack classification + risk score
+  Autoencoder → self-supervised anomaly score (label-free)
+  Combined    → ZTA enforcement action (ALLOW/MONITOR/CHALLENGE/BLOCK)
 
 Usage:
     python src/train.py
-    python src/train.py --train data/NSL_KDD_Train.csv \
-                        --test  data/NSL_KDD_Test.csv  \
-                        --epochs 50 --batch 256
+    python src/train.py --train data/NSL_KDD_Train.csv \\
+                        --test  data/NSL_KDD_Test.csv  \\
+                        --epochs 50 --ae-epochs 50 --batch 256
 """
 
 import argparse
@@ -41,26 +50,32 @@ from sklearn.utils.class_weight import compute_class_weight
 
 from preprocess import load_and_preprocess, CLASS_NAMES
 from model import build_cnn_gru_model, compile_model, get_callbacks
+from autoencoder import (train_autoencoder, evaluate_autoencoder,
+                         plot_reconstruction_errors)
 
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Train CNN-GRU IDS model on NSL-KDD'
+        description='Train Risk-Adaptive ZTA dual-layer detection models'
     )
-    parser.add_argument('--train',   default='data/NSL_KDD_Train.csv',
+    parser.add_argument('--train',      default='data/NSL_KDD_Train.csv',
                         help='Path to training CSV')
-    parser.add_argument('--test',    default='data/NSL_KDD_Test.csv',
+    parser.add_argument('--test',       default='data/NSL_KDD_Test.csv',
                         help='Path to test CSV')
-    parser.add_argument('--epochs',  type=int, default=50,
-                        help='Maximum training epochs')
-    parser.add_argument('--batch',   type=int, default=256,
+    parser.add_argument('--epochs',     type=int, default=50,
+                        help='Max epochs for CNN-GRU')
+    parser.add_argument('--ae-epochs',  type=int, default=50,
+                        help='Max epochs for autoencoder')
+    parser.add_argument('--batch',      type=int, default=256,
                         help='Batch size')
-    parser.add_argument('--lr',      type=float, default=0.001,
+    parser.add_argument('--lr',         type=float, default=0.001,
                         help='Initial learning rate')
-    parser.add_argument('--out',     default='data',
-                        help='Output directory for model and plots')
+    parser.add_argument('--out',        default='data',
+                        help='Output directory for models and plots')
+    parser.add_argument('--skip-ae',    action='store_true',
+                        help='Skip autoencoder training')
     return parser.parse_args()
 
 
@@ -105,7 +120,7 @@ def train(args):
     print("  STEP 3: Training")
     print("=" * 60)
     callbacks = get_callbacks(
-        checkpoint_path=os.path.join(args.out, 'best_model.h5')
+        checkpoint_path=os.path.join(args.out, 'best_model.keras')
     )
 
     history = model.fit(
@@ -149,12 +164,50 @@ def train(args):
     print(f"\nResults saved to {args.out}/training_results.json")
 
     # 5. Save model
-    model_path = os.path.join(args.out, 'cnn_gru_model.h5')
+    model_path = os.path.join(args.out, 'cnn_gru_model.keras')
     model.save(model_path)
     print(f"Model saved to {model_path}")
 
-    # 6. Plot training curves
+    # 6. Plot CNN-GRU training curves
     _plot_history(history, args.out)
+
+    # ── PART 2: Self-Supervised Autoencoder ───────────────────────────────
+    if not args.skip_ae:
+        print("\n" + "=" * 60)
+        print("  STEP 5: Self-Supervised Autoencoder Training")
+        print("  (trains on NORMAL traffic only — no attack labels used)")
+        print("=" * 60)
+
+        # Restore full training set (before val split) for autoencoder
+        X_train_full, X_test_full, y_train_full, y_test_full = \
+            load_and_preprocess(
+                args.train, args.test,
+                save_artifacts=False,
+                artifacts_dir=args.out
+            )
+
+        ae, enc, ae_history, threshold = train_autoencoder(
+            X_train_full, y_train_full,
+            out_dir=args.out,
+            epochs=args.ae_epochs,
+            batch_size=args.batch,
+        )
+
+        print("\n" + "=" * 60)
+        print("  STEP 6: Autoencoder Evaluation on Test Set")
+        print("=" * 60)
+        ae_results = evaluate_autoencoder(ae, X_test_full,
+                                          y_test_full, threshold)
+
+        # Save autoencoder results
+        results['autoencoder'] = ae_results
+        with open(os.path.join(args.out, 'training_results.json'), 'w') as f:
+            json.dump(results, f, indent=2)
+        print(f"\nFull results saved to {args.out}/training_results.json")
+
+        # Plot reconstruction error distribution
+        plot_reconstruction_errors(ae, X_test_full, y_test_full,
+                                   threshold, args.out)
 
     return model, history, results
 

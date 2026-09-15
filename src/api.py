@@ -53,7 +53,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ── Load model at startup ─────────────────────────────────────────────────────
-MODEL_PATH      = os.getenv('MODEL_PATH',      'data/cnn_gru_model.h5')
+MODEL_PATH      = os.getenv('MODEL_PATH',      'data/cnn_gru_model.keras')
 ARTIFACTS_DIR   = os.getenv('ARTIFACTS_DIR',   'data')
 RISK_THRESHOLD  = float(os.getenv('RISK_THRESHOLD', '0.5'))
 
