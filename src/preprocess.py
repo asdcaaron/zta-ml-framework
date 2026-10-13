@@ -189,10 +189,15 @@ def preprocess_single_sample(feature_dict: dict,
 
     Returns
     -------
-    np.ndarray of shape (1, 41, 1)
+    np.ndarray of shape (1, n_features, 1)
     """
     scaler   = joblib.load(os.path.join(artifacts_dir, 'scaler.pkl'))
     encoders = joblib.load(os.path.join(artifacts_dir, 'encoders.pkl'))
+
+    # Load n_features dynamically — handles both 40 (noise-fixed) and 41 (legacy)
+    n_feat_path = os.path.join(artifacts_dir, 'n_features.pkl')
+    n_features  = joblib.load(n_feat_path) if os.path.exists(n_feat_path) \
+                  else len(FEATURE_COLS)
 
     row = []
     for col in FEATURE_COLS:
@@ -204,7 +209,7 @@ def preprocess_single_sample(feature_dict: dict,
 
     sample = np.array(row).reshape(1, -1)
     sample = scaler.transform(sample)
-    sample = sample.reshape(1, 41, 1)
+    sample = sample.reshape(1, n_features, 1)
     return sample
 
 
