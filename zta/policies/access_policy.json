@@ -1,0 +1,261 @@
+{
+  "_comment": "ZTA Access Control Policies for the hybrid workforce environment.",
+  "_description": "Each policy defines: who (subject), what (resource), conditions (device/risk), and enforcement action.",
+  "_version": "1.0.0",
+  "_author": "Okado Aaron Obbo - S24B23/015",
+
+  "global_settings": {
+    "default_action": "DENY",
+    "continuous_auth_interval_seconds": 300,
+    "session_max_duration_seconds": 28800,
+    "mfa_required_for_all": true,
+    "risk_score_threshold_block": 0.8,
+    "risk_score_threshold_challenge": 0.5,
+    "risk_score_threshold_monitor": 0.3,
+    "micro_segmentation_enabled": true,
+    "device_posture_check_enabled": true
+  },
+
+  "roles": {
+    "admin": {
+      "description": "Full system administrator",
+      "trust_level": "high",
+      "allowed_resources": ["*"],
+      "require_mfa": true,
+      "require_device_cert": true,
+      "max_risk_score": 0.3
+    },
+    "analyst": {
+      "description": "Security analyst - read access to logs and dashboards",
+      "trust_level": "medium",
+      "allowed_resources": [
+        "dashboard", "logs", "reports", "alerts"
+      ],
+      "require_mfa": true,
+      "require_device_cert": true,
+      "max_risk_score": 0.5
+    },
+    "remote_worker": {
+      "description": "Remote employee accessing corporate resources",
+      "trust_level": "low",
+      "allowed_resources": [
+        "email", "file_share_read", "crm_read", "collaboration_tools"
+      ],
+      "require_mfa": true,
+      "require_device_cert": false,
+      "max_risk_score": 0.5
+    },
+    "contractor": {
+      "description": "External contractor - restricted access",
+      "trust_level": "minimal",
+      "allowed_resources": [
+        "project_portal", "shared_docs_read"
+      ],
+      "require_mfa": true,
+      "require_device_cert": false,
+      "max_risk_score": 0.3
+    },
+    "iot_device": {
+      "description": "IoT endpoint / sensor",
+      "trust_level": "minimal",
+      "allowed_resources": [
+        "telemetry_endpoint"
+      ],
+      "require_mfa": false,
+      "require_device_cert": true,
+      "max_risk_score": 0.2
+    }
+  },
+
+  "network_segments": {
+    "dmz": {
+      "vlan_id": 10,
+      "description": "Demilitarised zone - public-facing services",
+      "allowed_inbound_roles": ["remote_worker", "contractor"],
+      "allowed_outbound_to": ["internal_apps"],
+      "firewall_rules": [
+        {"port": 443, "protocol": "tcp", "action": "ALLOW"},
+        {"port": 80,  "protocol": "tcp", "action": "REDIRECT_HTTPS"},
+        {"port": "*", "protocol": "*",   "action": "DENY"}
+      ]
+    },
+    "internal_apps": {
+      "vlan_id": 20,
+      "description": "Internal application servers",
+      "allowed_inbound_roles": ["admin", "analyst", "remote_worker"],
+      "allowed_outbound_to": ["database"],
+      "firewall_rules": [
+        {"port": 8080, "protocol": "tcp", "action": "ALLOW"},
+        {"port": 5432, "protocol": "tcp", "action": "ALLOW"},
+        {"port": "*",  "protocol": "*",   "action": "DENY"}
+      ]
+    },
+    "database": {
+      "vlan_id": 30,
+      "description": "Database servers - strictly isolated",
+      "allowed_inbound_roles": ["admin"],
+      "allowed_outbound_to": [],
+      "firewall_rules": [
+        {"port": 5432, "protocol": "tcp", "action": "ALLOW", "source_vlan": 20},
+        {"port": 3306, "protocol": "tcp", "action": "ALLOW", "source_vlan": 20},
+        {"port": "*",  "protocol": "*",   "action": "DENY"}
+      ]
+    },
+    "iot_network": {
+      "vlan_id": 40,
+      "description": "Isolated IoT device segment",
+      "allowed_inbound_roles": ["iot_device"],
+      "allowed_outbound_to": [],
+      "firewall_rules": [
+        {"port": 8883, "protocol": "tcp", "action": "ALLOW", "_note": "MQTT over TLS"},
+        {"port": "*",  "protocol": "*",   "action": "DENY"}
+      ]
+    },
+    "management": {
+      "vlan_id": 99,
+      "description": "Admin/management plane - highest restriction",
+      "allowed_inbound_roles": ["admin"],
+      "allowed_outbound_to": ["*"],
+      "firewall_rules": [
+        {"port": 22,   "protocol": "tcp", "action": "ALLOW", "_note": "SSH"},
+        {"port": 3389, "protocol": "tcp", "action": "ALLOW", "_note": "RDP"},
+        {"port": "*",  "protocol": "*",   "action": "DENY"}
+      ]
+    }
+  },
+
+  "access_policies": [
+    {
+      "policy_id": "POL-001",
+      "name": "Remote Worker Base Access",
+      "subject_role": "remote_worker",
+      "resources": ["email", "collaboration_tools"],
+      "conditions": {
+        "mfa_verified": true,
+        "max_risk_score": 0.5,
+        "device_posture": "any",
+        "time_window": "08:00-22:00",
+        "location": "any"
+      },
+      "action": "ALLOW",
+      "continuous_reauth": true
+    },
+    {
+      "policy_id": "POL-002",
+      "name": "Remote Worker File Share",
+      "subject_role": "remote_worker",
+      "resources": ["file_share_read"],
+      "conditions": {
+        "mfa_verified": true,
+        "max_risk_score": 0.4,
+        "device_posture": "compliant",
+        "time_window": "08:00-20:00",
+        "location": "any"
+      },
+      "action": "ALLOW",
+      "continuous_reauth": true
+    },
+    {
+      "policy_id": "POL-003",
+      "name": "Admin Full Access",
+      "subject_role": "admin",
+      "resources": ["*"],
+      "conditions": {
+        "mfa_verified": true,
+        "max_risk_score": 0.3,
+        "device_posture": "compliant",
+        "device_certificate": true,
+        "time_window": "any",
+        "location": "any"
+      },
+      "action": "ALLOW",
+      "continuous_reauth": true
+    },
+    {
+      "policy_id": "POL-004",
+      "name": "High Risk Session Block",
+      "subject_role": "*",
+      "resources": ["*"],
+      "conditions": {
+        "min_risk_score": 0.8
+      },
+      "action": "BLOCK",
+      "alert": true,
+      "log_level": "CRITICAL"
+    },
+    {
+      "policy_id": "POL-005",
+      "name": "Medium Risk MFA Challenge",
+      "subject_role": "*",
+      "resources": ["*"],
+      "conditions": {
+        "min_risk_score": 0.5,
+        "max_risk_score": 0.79
+      },
+      "action": "CHALLENGE_MFA",
+      "alert": true,
+      "log_level": "WARNING"
+    },
+    {
+      "policy_id": "POL-006",
+      "name": "Contractor Limited Access",
+      "subject_role": "contractor",
+      "resources": ["project_portal", "shared_docs_read"],
+      "conditions": {
+        "mfa_verified": true,
+        "max_risk_score": 0.3,
+        "time_window": "09:00-17:00",
+        "location": "any"
+      },
+      "action": "ALLOW",
+      "continuous_reauth": true,
+      "session_max_duration_seconds": 14400
+    },
+    {
+      "policy_id": "POL-007",
+      "name": "IoT Device Telemetry",
+      "subject_role": "iot_device",
+      "resources": ["telemetry_endpoint"],
+      "conditions": {
+        "device_certificate": true,
+        "max_risk_score": 0.2,
+        "source_vlan": 40
+      },
+      "action": "ALLOW",
+      "continuous_reauth": false
+    },
+    {
+      "policy_id": "POL-008",
+      "name": "Lateral Movement Prevention",
+      "subject_role": "*",
+      "resources": ["*"],
+      "conditions": {
+        "cross_segment_access": true,
+        "role_not_in": ["admin"]
+      },
+      "action": "DENY",
+      "alert": true,
+      "log_level": "WARNING"
+    }
+  ],
+
+  "device_posture_requirements": {
+    "compliant": {
+      "os_patched": true,
+      "antivirus_active": true,
+      "disk_encrypted": true,
+      "device_registered": true,
+      "certificate_valid": true,
+      "last_scan_max_hours": 24
+    },
+    "any": {
+      "device_registered": true
+    }
+  },
+
+  "alert_channels": {
+    "email": "security@organisation.local",
+    "siem_endpoint": "http://siem.local:5514/api/events",
+    "slack_webhook": "https://hooks.slack.com/services/YOUR/WEBHOOK/HERE"
+  }
+}

@@ -1,0 +1,7 @@
+{"timestamp": "2026-09-02T12:22:08.049589Z", "connection_id": 2, "risk_score": 0.0001, "classification": "Normal", "action": "ALLOW", "confidence": 0.9999}
+{"timestamp": "2026-09-02T12:22:10.983992Z", "connection_id": 3, "risk_score": 0.0001, "classification": "Normal", "action": "ALLOW", "confidence": 0.9999}
+{"timestamp": "2026-09-02T12:25:39.803021Z", "connection_id": 1, "risk_score": 0.0007, "classification": "Normal", "action": "ALLOW", "confidence": 0.9993}
+{"timestamp": "2026-09-02T12:25:42.141184Z", "connection_id": 2, "risk_score": 0.0001, "classification": "Normal", "action": "ALLOW", "confidence": 0.9999}
+{"timestamp": "2026-09-02T12:26:59.462980+00:00", "connection_id": 1, "risk_score": 0.0007, "classification": "Normal", "action": "ALLOW", "confidence": 0.9993}
+{"timestamp": "2026-09-02T12:27:01.982139+00:00", "connection_id": 2, "risk_score": 0.0001, "classification": "Normal", "action": "ALLOW", "confidence": 0.9999}
+{"timestamp": "2026-09-02T12:27:04.307728+00:00", "connection_id": 3, "risk_score": 0.0001, "classification": "Normal", "action": "ALLOW", "confidence": 0.9999}

@@ -1,0 +1,26 @@
+[
+  {
+    "System": "Legacy VPN (OpenVPN)",
+    "Accuracy": 0.6664,
+    "Precision": 0.8016,
+    "Recall (TPR)": 0.5501,
+    "F1 Score": 0.6524,
+    "False Positive Rate": 0.1799
+  },
+  {
+    "System": "ZTA Only",
+    "Accuracy": 0.7691,
+    "Precision": 0.8985,
+    "Recall (TPR)": 0.6701,
+    "F1 Score": 0.7677,
+    "False Positive Rate": 0.1
+  },
+  {
+    "System": "ZTA + ML (Proposed)",
+    "Accuracy": 0.815,
+    "Precision": 0.962,
+    "Recall (TPR)": 0.7027,
+    "F1 Score": 0.8122,
+    "False Positive Rate": 0.0367
+  }
+]

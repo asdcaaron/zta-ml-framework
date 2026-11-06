@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Risk-Adaptive ZTA — Live Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #003087 0%, #0055cc 100%);
+      padding: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #C8A84B;
+    }
+    .header h1 { font-size: 1.15rem; font-weight: 700; }
+    .header .meta { font-size: 0.78rem; opacity: 0.85; text-align: right; }
+    .live-dot {
+      display: inline-block; width: 10px; height: 10px;
+      background: #2ecc71; border-radius: 50%;
+      animation: pulse 1.5s infinite; margin-right: 6px;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.4; transform:scale(1.3); }
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 18px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .card h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8b949e;
+      margin-bottom: 10px;
+    }
+
+    /* ── Stat boxes ── */
+    .stat-val {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #C8A84B;
+    }
+    .stat-label { font-size: 0.78rem; color: #8b949e; margin-top: 2px; }
+
+    /* ── Pipeline ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .pipe-box {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      text-align: center;
+      min-width: 110px;
+      flex: 1;
+    }
+    .pipe-box .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+    .pipe-box.new { border-color: #C8A84B; background: #1a1500; }
+    .pipe-box.new .badge {
+      display: inline-block;
+      background: #C8A84B;
+      color: #000;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-top: 3px;
+    }
+    .arrow { color: #6e7681; font-size: 1.2rem; flex-shrink: 0; }
+
+    /* ── Scenarios ── */
+    .scenario-btn {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-normal  { background: #0d3323; color: #3fb950; border: 1px solid #238636; }
+    .btn-dos     { background: #3d0f0f; color: #f85149; border: 1px solid #da3633; }
+    .btn-probe   { background: #3d2c00; color: #d29922; border: 1px solid #9e6a03; }
+    .scenario-btn:hover { transform: translateX(3px); filter: brightness(1.2); }
+    .scenario-btn .desc { font-size: 0.72rem; font-weight: 400; opacity: 0.8; margin-top: 2px; }
+
+    /* ── Result panel ── */
+    .result-panel {
+      background: #0d1117;
+      border: 2px solid #30363d;
+      border-radius: 10px;
+      padding: 18px;
+      min-height: 220px;
+      position: relative;
+    }
+    .result-panel.action-ALLOW          { border-color: #238636; }
+    .result-panel.action-MONITOR        { border-color: #9e6a03; }
+    .result-panel.action-CHALLENGE_MFA  { border-color: #d29922; }
+    .result-panel.action-BLOCK          { border-color: #da3633; }
+
+    .action-badge {
+      display: inline-block;
+      font-size: 1.6rem;
+      font-weight: 800;
+      padding: 8px 20px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      letter-spacing: 2px;
+    }
+    .badge-ALLOW         { background: #238636; color: #fff; }
+    .badge-MONITOR       { background: #9e6a03; color: #fff; }
+    .badge-CHALLENGE_MFA { background: #d29922; color: #000; }
+    .badge-BLOCK         { background: #da3633; color: #fff; }
+
+    .risk-bar-wrap {
+      background: #21262d;
+      border-radius: 6px;
+      height: 14px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .risk-bar {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.6s ease;
+      background: linear-gradient(90deg, #238636, #d29922, #da3633);
+    }
+
+    .result-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 12px; }
+    .result-item { background: #161b22; border-radius: 6px; padding: 10px; text-align: center; }
+    .result-item .val { font-size: 1.1rem; font-weight: 700; color: #C8A84B; }
+    .result-item .lbl { font-size: 0.7rem; color: #8b949e; margin-top: 2px; }
+
+    .prob-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.78rem; }
+    .prob-row .cls { width: 60px; color: #8b949e; }
+    .prob-row .bar-w { flex: 1; background: #21262d; border-radius: 4px; height: 8px; overflow: hidden; }
+    .prob-row .bar-f { height: 100%; border-radius: 4px; background: #003087; transition: width 0.5s; }
+    .prob-row .pct { width: 42px; text-align: right; }
+
+    /* ── Comparison table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    thead th {
+      background: #003087;
+      color: #fff;
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 600;
+    }
+    tbody tr:nth-child(even) { background: #161b22; }
+    tbody tr:nth-child(odd)  { background: #0d1117; }
+    tbody td { padding: 8px 10px; }
+    tbody tr.highlight td { background: #0d3323; font-weight: 600; color: #3fb950; }
+    .tick   { color: #3fb950; font-weight: 700; }
+    .cross  { color: #f85149; font-weight: 700; }
+
+    /* ── Audit log ── */
+    .log-entry {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
+      background: #161b22;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; } }
+    .log-action {
+      font-weight: 700;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      min-width: 110px;
+      text-align: center;
+    }
+    .log-ALLOW         { background: #238636; color: #fff; }
+    .log-MONITOR       { background: #9e6a03; color: #fff; }
+    .log-CHALLENGE_MFA { background: #d29922; color: #000; }
+    .log-BLOCK         { background: #da3633; color: #fff; }
+    .log-ts { color: #8b949e; font-size: 0.7rem; min-width: 75px; }
+
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid #30363d;
+      border-top-color: #C8A84B;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 12px;
+      font-size: 0.72rem;
+      color: #6e7681;
+      border-top: 1px solid #21262d;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+<div class="header">
+  <div>
+    <h1>Risk-Adaptive Zero Trust — Live Prototype Demo</h1>
+    <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">
+      <span class="live-dot"></span>Flask API running on localhost:5000 &nbsp;|&nbsp;
+      CNN-GRU model loaded &nbsp;|&nbsp; NSL-KDD dataset
+    </div>
+  </div>
+  <div class="meta">
+    <div><strong>Okado Aaron Obbo</strong></div>
+    <div>S24B23/015 &nbsp;|&nbsp; BSc Computer Science</div>
+    <div>Uganda Christian University</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── STATS ROW ─────────────────────────────────────────────────────── -->
+  <div class="grid-3" style="margin-top:16px;">
+    <div class="card">
+      <h3>CNN-GRU Model</h3>
+      <div class="stat-val">76%</div>
+      <div class="stat-label">Test Accuracy on NSL-KDD</div>
+      <div style="margin-top:6px;font-size:0.75rem;color:#8b949e;">
+        Val accuracy: 97.3% &nbsp;|&nbsp; 327K parameters<br/>
+        Classes: Normal · DoS · Probe · R2L · U2R
+      </div>
+    </div>
+    <div class="card">
+      <h3>Training Dataset</h3>
+      <div class="stat-val">125K</div>
+      <div class="stat-label">NSL-KDD training samples</div>
+      <div style="margin-top:6px;font-size:0.75rem;color:#8b949e;">
+        40 features (noise-cleaned)<br/>
+        22,543 test samples
+      </div>
+    </div>
+    <div class="card">
+      <h3>ZTA Response Time</h3>
+      <div class="stat-val">&lt;2s</div>
+      <div class="stat-label">Detection to enforcement</div>
+      <div style="margin-top:6px;font-size:0.75rem;color:#8b949e;">
+        Legacy VPN: manual (hours)<br/>
+        ZTA Only: ~7.5 seconds
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PIPELINE ──────────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:18px;">
+    <h3>Full Technical Pipeline</h3>
+    <div class="pipeline" style="margin-top:10px;">
+      <div class="pipe-box">
+        <span class="icon">🌐</span>
+        <strong>Network Traffic</strong><br/>pcap / live Zeek
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-box">
+        <span class="icon">🦈</span>
+        <strong>Zeek (Docker)</strong><br/>conn.log features
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-box new">
+        <span class="icon">🧠</span>
+        <strong>CNN-GRU</strong><br/>Known attacks
+        <div><span class="badge">SUPERVISED</span></div>
+      </div>
+      <div class="arrow">+</div>
+      <div class="pipe-box new">
+        <span class="icon">🔍</span>
+        <strong>Autoencoder</strong><br/>Zero-day detect
+        <div><span class="badge">SELF-SUPERVISED</span></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-box">
+        <span class="icon">⚖️</span>
+        <strong>Risk Score</strong><br/>0.0 → 1.0
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-box">
+        <span class="icon">🔒</span>
+        <strong>ZTA Policy</strong><br/>ALLOW/BLOCK
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-box">
+        <span class="icon">📋</span>
+        <strong>Audit Log</strong><br/>audit.jsonl
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LIVE DEMO ─────────────────────────────────────────────────────── -->
+  <div class="grid-2">
+
+    <!-- Scenario buttons -->
+    <div class="card">
+      <h3>Live Prediction — Choose a Scenario</h3>
+      <div style="margin-top:10px;">
+
+        <button class="scenario-btn btn-normal" onclick="predict('normal')">
+          <span style="font-size:1.3rem;">✅</span>
+          <div>
+            <div>Normal HTTP Connection</div>
+            <div class="desc">Employee browsing: tcp/http/SF · 232 bytes src · 8153 bytes dst</div>
+          </div>
+        </button>
+
+        <button class="scenario-btn btn-dos" onclick="predict('dos')">
+          <span style="font-size:1.3rem;">💣</span>
+          <div>
+            <div>DoS Attack — SYN Flood</div>
+            <div class="desc">511 failed connections · S0 flag · 0 bytes · 100% error rate</div>
+          </div>
+        </button>
+
+        <button class="scenario-btn btn-probe" onclick="predict('probe')">
+          <span style="font-size:1.3rem;">🔎</span>
+          <div>
+            <div>Network Probe — Port Scan</div>
+            <div class="desc">229 connections · REJ flag · 100% reject rate · diff services</div>
+          </div>
+        </button>
+
+        <button class="scenario-btn" style="background:#1a0d2e;color:#a78bfa;border:1px solid #7c3aed;" onclick="predict('r2l')">
+          <span style="font-size:1.3rem;">🔐</span>
+          <div>
+            <div>R2L — Brute Force Login</div>
+            <div class="desc">Multiple failed logins · ftp_data · long duration · small src bytes</div>
+          </div>
+        </button>
+
+      </div>
+
+      <div style="margin-top:12px;padding:10px;background:#0d1117;border-radius:6px;font-size:0.75rem;color:#8b949e;">
+        <strong style="color:#C8A84B;">What happens:</strong> Features are sent as JSON to the Flask API →
+        CNN-GRU model scores the connection → ZTA enforcement action returned in real time
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="card">
+      <h3>ZTA Decision — Real-Time API Response</h3>
+      <div id="spinner" class="spinner" style="margin:20px auto;display:none;"></div>
+      <div id="result-panel" class="result-panel" style="margin-top:10px;">
+        <div style="color:#8b949e;text-align:center;padding-top:50px;font-size:0.85rem;">
+          ← Select a scenario to see a live prediction
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── COMPARISON TABLE ───────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:18px;">
+    <h3>Four-Way System Comparison</h3>
+    <table style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th>System</th>
+          <th>Accuracy</th>
+          <th>F1 Score</th>
+          <th>False Positive Rate</th>
+          <th>Response Time</th>
+          <th>Lateral Move Blocked</th>
+          <th>Zero-Day Detection</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Legacy VPN (OpenVPN)</td>
+          <td>66.6%</td><td>65.2%</td><td>18.0%</td>
+          <td>Manual (hours)</td>
+          <td><span class="cross">✗ No</span></td>
+          <td><span class="cross">✗ No</span></td>
+        </tr>
+        <tr>
+          <td>ZTA Only</td>
+          <td>76.9%</td><td>76.8%</td><td>10.0%</td>
+          <td>7.5s</td>
+          <td><span class="tick">✓ Yes</span></td>
+          <td><span class="cross">✗ No</span></td>
+        </tr>
+        <tr>
+          <td>ZTA + CNN-GRU (Supervised)</td>
+          <td>81.5%</td><td>81.2%</td><td>3.67%</td>
+          <td>1.8s</td>
+          <td><span class="tick">✓ Yes</span></td>
+          <td><span class="cross">✗ No</span></td>
+        </tr>
+        <tr class="highlight">
+          <td>⭐ ZTA + Autoencoder (Self-Supervised) — Proposed</td>
+          <td>78.2%</td><td>77.9%</td><td>5.0%</td>
+          <td>1.5s</td>
+          <td><span class="tick">✓ Yes</span></td>
+          <td><span class="tick">✓ Yes — UNIQUE</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── AUDIT LOG ──────────────────────────────────────────────────────── -->
+  <div class="card">
+    <h3>Live Audit Trail — Every Decision Logged</h3>
+    <div id="audit-log" style="margin-top:10px;max-height:160px;overflow-y:auto;">
+      <div style="color:#8b949e;font-size:0.78rem;padding:10px;">
+        Predictions made above will appear here...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Risk-Adaptive ZTA Framework &nbsp;|&nbsp; Okado Aaron Obbo S24B23/015 &nbsp;|&nbsp;
+  Uganda Christian University &nbsp;|&nbsp; github.com/asdcaaron/zta-ml-framework
+</div>
+
+<!-- ── JAVASCRIPT ──────────────────────────────────────────────────────────── -->
+<script>
+const API = 'http://127.0.0.1:5000';
+let logCount = 0;
+
+const SCENARIOS = {
+  normal: {
+    label: 'Normal HTTP',
+    features: {
+      duration:0, protocol_type:'tcp', service:'http', flag:'SF',
+      src_bytes:232, dst_bytes:8153, count:8, srv_count:8,
+      same_srv_rate:1.0, serror_rate:0.0, rerror_rate:0.0,
+      diff_srv_rate:0.0, srv_diff_host_rate:0.0
+    }
+  },
+  dos: {
+    label: 'DoS SYN Flood',
+    features: {
+      duration:0, protocol_type:'tcp', service:'private', flag:'S0',
+      src_bytes:0, dst_bytes:0, count:511, srv_count:511,
+      serror_rate:1.0, srv_serror_rate:1.0, same_srv_rate:1.0,
+      diff_srv_rate:0.0, rerror_rate:0.0
+    }
+  },
+  probe: {
+    label: 'Port Scan Probe',
+    features: {
+      duration:0, protocol_type:'tcp', service:'private', flag:'REJ',
+      src_bytes:0, dst_bytes:0, count:229, srv_count:20,
+      rerror_rate:1.0, srv_rerror_rate:1.0, diff_srv_rate:0.06,
+      same_srv_rate:0.09, serror_rate:0.0
+    }
+  },
+  r2l: {
+    label: 'R2L Brute Force',
+    features: {
+      duration:299, protocol_type:'tcp', service:'ftp_data', flag:'SF',
+      src_bytes:28, dst_bytes:0, count:1, srv_count:1,
+      num_failed_logins:5, logged_in:0, same_srv_rate:1.0,
+      serror_rate:0.0, rerror_rate:0.0, diff_srv_rate:0.0
+    }
+  }
+};
+
+async function predict(scenario) {
+  const s = SCENARIOS[scenario];
+  const spinner = document.getElementById('spinner');
+  const panel   = document.getElementById('result-panel');
+
+  spinner.style.display = 'block';
+  panel.innerHTML = '';
+  panel.className = 'result-panel';
+
+  try {
+    const resp = await fetch(API + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ features: s.features })
+    });
+    const data = await resp.json();
+    spinner.style.display = 'none';
+    renderResult(data, s.label);
+    addAuditEntry(data, s.label);
+  } catch(e) {
+    spinner.style.display = 'none';
+    panel.innerHTML = `<div style="color:#f85149;padding:20px;">
+      ❌ Cannot reach API at ${API}<br/>
+      <small>Make sure: python src/api.py is running in the project folder</small>
+    </div>`;
+  }
+}
+
+function renderResult(data, label) {
+  const panel  = document.getElementById('result-panel');
+  const action = data.action;
+  const risk   = data.risk_score;
+  const probs  = data.probabilities || {};
+  const classes = ['Normal','DoS','Probe','R2L','U2R'];
+
+  panel.className = `result-panel action-${action}`;
+
+  const actionColour = {
+    ALLOW:'#2ecc71', MONITOR:'#f39c12',
+    CHALLENGE_MFA:'#e67e22', BLOCK:'#e74c3c'
+  }[action] || '#fff';
+
+  const probBars = classes.map(cls => {
+    const pct = ((probs[cls] || 0) * 100).toFixed(1);
+    return `
+      <div class="prob-row">
+        <span class="cls">${cls}</span>
+        <div class="bar-w"><div class="bar-f" style="width:${pct}%;background:${cls===data.classification?'#C8A84B':'#003087'}"></div></div>
+        <span class="pct">${pct}%</span>
+      </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div>
+      <span class="action-badge badge-${action}">${action.replace('_',' ')}</span>
+      <span style="font-size:0.8rem;color:#8b949e;margin-left:10px;">← ZTA enforcement action</span>
+    </div>
+
+    <div style="font-size:0.8rem;margin:6px 0;color:#8b949e;">
+      Risk Score: <strong style="color:${actionColour}">${risk}</strong>
+    </div>
+    <div class="risk-bar-wrap">
+      <div class="risk-bar" style="width:${(risk*100).toFixed(0)}%"></div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="val">${risk}</div>
+        <div class="lbl">Risk Score</div>
+      </div>
+      <div class="result-item">
+        <div class="val" style="font-size:0.85rem;">${data.classification}</div>
+        <div class="lbl">Classification</div>
+      </div>
+      <div class="result-item">
+        <div class="val">${(data.confidence*100).toFixed(1)}%</div>
+        <div class="lbl">Confidence</div>
+      </div>
+      <div class="result-item">
+        <div class="val">${data.latency_ms ? data.latency_ms.toFixed(0) : '—'}ms</div>
+        <div class="lbl">Latency</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div style="font-size:0.72rem;color:#8b949e;margin-bottom:4px;">CLASS PROBABILITIES</div>
+      ${probBars}
+    </div>`;
+}
+
+function addAuditEntry(data, label) {
+  logCount++;
+  const log  = document.getElementById('audit-log');
+  const now  = new Date().toLocaleTimeString();
+  const div  = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `
+    <span class="log-ts">${now}</span>
+    <span class="log-action log-${data.action}">${data.action.replace('_',' ')}</span>
+    <span style="color:#e6edf3;">${label}</span>
+    <span style="color:#8b949e;margin-left:auto;">
+      risk=${data.risk_score} &nbsp; class=${data.classification} &nbsp; conf=${(data.confidence*100).toFixed(0)}%
+    </span>`;
+  log.insertBefore(div, log.firstChild);
+
+  // Remove placeholder
+  const placeholder = log.querySelector('div[style]');
+  if (placeholder && logCount === 1) placeholder.remove();
+}
+</script>
+</body>
+</html>

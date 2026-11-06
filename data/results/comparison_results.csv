@@ -1,0 +1,4 @@
+System,Accuracy,Precision,Recall (TPR),F1 Score,False Positive Rate,Avg Response Time,Lateral Movement Blocked,Encrypted Traffic Detect,Micro-Segmentation,Continuous Auth,TP,FP,TN,FN
+Legacy VPN (OpenVPN),0.6664,0.8016,0.5501,0.6524,0.1799,Manual (hours),False,False,False,False,7059,1747,7963,5774
+ZTA Only,0.7691,0.8985,0.6701,0.7677,0.1,7.5s,True,False,True,True,8599,971,8739,4234
+ZTA + ML (Proposed),0.815,0.962,0.7027,0.8122,0.0367,1.8s,True,True,True,True,9018,356,9354,3815
