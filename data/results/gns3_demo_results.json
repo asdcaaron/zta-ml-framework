@@ -1,0 +1,1166 @@
+{
+  "topology_ref": "C:\\Users\\AARON\\Desktop\\Final Year Project Prototype\\zta-ml-framework\\data\\gns3\\topology.md",
+  "generated_at": "2026-11-06T15:46:05.937633+00:00",
+  "environment": {
+    "docker_daemon": false,
+    "zeek_image_present": false,
+    "scapy_available": true,
+    "api_started_by_demo": false
+  },
+  "paths_used": {
+    "normal": [
+      "conn_log",
+      "full_feature"
+    ],
+    "dos": [
+      "conn_log",
+      "full_feature"
+    ],
+    "probe": [
+      "conn_log",
+      "full_feature"
+    ],
+    "r2l": [
+      "conn_log",
+      "full_feature"
+    ],
+    "u2r": [
+      "conn_log",
+      "full_feature"
+    ]
+  },
+  "per_class": {
+    "normal": {
+      "conn_log": {
+        "flows": [
+          {
+            "flow_id": 1,
+            "risk_score": 0.0032,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9968,
+            "latency_ms": 75.22
+          },
+          {
+            "flow_id": 2,
+            "risk_score": 0.0024,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9976,
+            "latency_ms": 82.24
+          },
+          {
+            "flow_id": 3,
+            "risk_score": 0.0023,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9977,
+            "latency_ms": 72.27
+          },
+          {
+            "flow_id": 4,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 146.49
+          },
+          {
+            "flow_id": 5,
+            "risk_score": 0.0022,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9978,
+            "latency_ms": 74.81
+          },
+          {
+            "flow_id": 6,
+            "risk_score": 0.0028,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9972,
+            "latency_ms": 79.65
+          },
+          {
+            "flow_id": 7,
+            "risk_score": 0.0035,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9965,
+            "latency_ms": 75.21
+          },
+          {
+            "flow_id": 8,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 75.69
+          },
+          {
+            "flow_id": 9,
+            "risk_score": 0.0027,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9973,
+            "latency_ms": 99.67
+          },
+          {
+            "flow_id": 10,
+            "risk_score": 0.004,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.996,
+            "latency_ms": 69.44
+          },
+          {
+            "flow_id": 11,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 75.75
+          },
+          {
+            "flow_id": 12,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 74.7
+          },
+          {
+            "flow_id": 13,
+            "risk_score": 0.0025,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9975,
+            "latency_ms": 73.62
+          },
+          {
+            "flow_id": 14,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 73.21
+          },
+          {
+            "flow_id": 15,
+            "risk_score": 0.0025,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9975,
+            "latency_ms": 70.84
+          },
+          {
+            "flow_id": 16,
+            "risk_score": 0.0037,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9963,
+            "latency_ms": 80.92
+          },
+          {
+            "flow_id": 17,
+            "risk_score": 0.0027,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9973,
+            "latency_ms": 76.4
+          },
+          {
+            "flow_id": 18,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 87.72
+          },
+          {
+            "flow_id": 19,
+            "risk_score": 0.0018,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9982,
+            "latency_ms": 102.23
+          },
+          {
+            "flow_id": 20,
+            "risk_score": 0.0025,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9975,
+            "latency_ms": 69.09
+          },
+          {
+            "flow_id": 21,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 77.8
+          },
+          {
+            "flow_id": 22,
+            "risk_score": 0.0018,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9982,
+            "latency_ms": 83.46
+          },
+          {
+            "flow_id": 23,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 71.08
+          },
+          {
+            "flow_id": 24,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 101.73
+          }
+        ],
+        "counts": {
+          "ALLOW": 24,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 0
+        }
+      },
+      "zeek": "zeek_unavailable",
+      "full_feature": {
+        "flows": [
+          {
+            "flow_id": 123,
+            "risk_score": 0.8683,
+            "classification": "DoS",
+            "action": "BLOCK",
+            "confidence": 0.7635,
+            "latency_ms": 110.74
+          }
+        ],
+        "counts": {
+          "ALLOW": 0,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 1
+        }
+      }
+    },
+    "dos": {
+      "conn_log": {
+        "flows": [
+          {
+            "flow_id": 25,
+            "risk_score": 0.0188,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9812,
+            "latency_ms": 79.38
+          },
+          {
+            "flow_id": 26,
+            "risk_score": 0.011,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.989,
+            "latency_ms": 80.74
+          },
+          {
+            "flow_id": 27,
+            "risk_score": 0.012,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.988,
+            "latency_ms": 70.89
+          },
+          {
+            "flow_id": 28,
+            "risk_score": 0.0156,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9844,
+            "latency_ms": 80.38
+          },
+          {
+            "flow_id": 29,
+            "risk_score": 0.0151,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9849,
+            "latency_ms": 97.74
+          },
+          {
+            "flow_id": 30,
+            "risk_score": 0.0145,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9855,
+            "latency_ms": 68.88
+          },
+          {
+            "flow_id": 31,
+            "risk_score": 0.0116,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9884,
+            "latency_ms": 76.45
+          },
+          {
+            "flow_id": 32,
+            "risk_score": 0.0164,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9836,
+            "latency_ms": 79.57
+          },
+          {
+            "flow_id": 33,
+            "risk_score": 0.0113,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9887,
+            "latency_ms": 67.9
+          },
+          {
+            "flow_id": 34,
+            "risk_score": 0.0116,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9884,
+            "latency_ms": 71.37
+          },
+          {
+            "flow_id": 35,
+            "risk_score": 0.0151,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9849,
+            "latency_ms": 72.14
+          },
+          {
+            "flow_id": 36,
+            "risk_score": 0.0128,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9872,
+            "latency_ms": 67.95
+          },
+          {
+            "flow_id": 37,
+            "risk_score": 0.0107,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9893,
+            "latency_ms": 74.51
+          },
+          {
+            "flow_id": 38,
+            "risk_score": 0.0164,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9836,
+            "latency_ms": 75.64
+          },
+          {
+            "flow_id": 39,
+            "risk_score": 0.0115,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9885,
+            "latency_ms": 72.3
+          },
+          {
+            "flow_id": 40,
+            "risk_score": 0.0164,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9836,
+            "latency_ms": 73.54
+          },
+          {
+            "flow_id": 41,
+            "risk_score": 0.0169,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9831,
+            "latency_ms": 69.13
+          },
+          {
+            "flow_id": 42,
+            "risk_score": 0.0163,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9837,
+            "latency_ms": 69.54
+          },
+          {
+            "flow_id": 43,
+            "risk_score": 0.0159,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9841,
+            "latency_ms": 65.02
+          },
+          {
+            "flow_id": 44,
+            "risk_score": 0.0122,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9878,
+            "latency_ms": 106.65
+          },
+          {
+            "flow_id": 45,
+            "risk_score": 0.0116,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9884,
+            "latency_ms": 63.99
+          },
+          {
+            "flow_id": 46,
+            "risk_score": 0.0109,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9891,
+            "latency_ms": 69.44
+          },
+          {
+            "flow_id": 47,
+            "risk_score": 0.0189,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9811,
+            "latency_ms": 82.95
+          },
+          {
+            "flow_id": 48,
+            "risk_score": 0.0123,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9877,
+            "latency_ms": 67.31
+          },
+          {
+            "flow_id": 49,
+            "risk_score": 0.0162,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9838,
+            "latency_ms": 73.37
+          }
+        ],
+        "counts": {
+          "ALLOW": 25,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 0
+        }
+      },
+      "zeek": "zeek_unavailable",
+      "full_feature": {
+        "flows": [
+          {
+            "flow_id": 124,
+            "risk_score": 0.9297,
+            "classification": "DoS",
+            "action": "BLOCK",
+            "confidence": 0.9142,
+            "latency_ms": 70.45
+          }
+        ],
+        "counts": {
+          "ALLOW": 0,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 1
+        }
+      }
+    },
+    "probe": {
+      "conn_log": {
+        "flows": [
+          {
+            "flow_id": 50,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 77.51
+          },
+          {
+            "flow_id": 51,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 92.26
+          },
+          {
+            "flow_id": 52,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 81.31
+          },
+          {
+            "flow_id": 53,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 69.05
+          },
+          {
+            "flow_id": 54,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 68.82
+          },
+          {
+            "flow_id": 55,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 79.27
+          },
+          {
+            "flow_id": 56,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 70.98
+          },
+          {
+            "flow_id": 57,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 67.73
+          },
+          {
+            "flow_id": 58,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 77.2
+          },
+          {
+            "flow_id": 59,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 72.04
+          },
+          {
+            "flow_id": 60,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 72.82
+          },
+          {
+            "flow_id": 61,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 93.63
+          },
+          {
+            "flow_id": 62,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 70.2
+          },
+          {
+            "flow_id": 63,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 72.37
+          },
+          {
+            "flow_id": 64,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 83.17
+          },
+          {
+            "flow_id": 65,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 73.51
+          },
+          {
+            "flow_id": 66,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 129.32
+          },
+          {
+            "flow_id": 67,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 69.49
+          },
+          {
+            "flow_id": 68,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 80.42
+          },
+          {
+            "flow_id": 69,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 76.96
+          },
+          {
+            "flow_id": 70,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 73.87
+          },
+          {
+            "flow_id": 71,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 99.25
+          },
+          {
+            "flow_id": 72,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 67.71
+          },
+          {
+            "flow_id": 73,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 95.59
+          },
+          {
+            "flow_id": 74,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 71.79
+          },
+          {
+            "flow_id": 75,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 77.24
+          },
+          {
+            "flow_id": 76,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 82.3
+          },
+          {
+            "flow_id": 77,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 76.6
+          },
+          {
+            "flow_id": 78,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 76.33
+          },
+          {
+            "flow_id": 79,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 69.11
+          },
+          {
+            "flow_id": 80,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 118.04
+          },
+          {
+            "flow_id": 81,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 78.53
+          },
+          {
+            "flow_id": 82,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 80.2
+          },
+          {
+            "flow_id": 83,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 99.59
+          },
+          {
+            "flow_id": 84,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 75.61
+          }
+        ],
+        "counts": {
+          "ALLOW": 35,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 0
+        }
+      },
+      "zeek": "zeek_unavailable",
+      "full_feature": {
+        "flows": [
+          {
+            "flow_id": 125,
+            "risk_score": 0.0282,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9718,
+            "latency_ms": 67.59
+          }
+        ],
+        "counts": {
+          "ALLOW": 1,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 0
+        }
+      }
+    },
+    "r2l": {
+      "conn_log": {
+        "flows": [
+          {
+            "flow_id": 85,
+            "risk_score": 0.0027,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9973,
+            "latency_ms": 74.21
+          },
+          {
+            "flow_id": 86,
+            "risk_score": 0.0023,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9977,
+            "latency_ms": 69.76
+          },
+          {
+            "flow_id": 87,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 78.39
+          },
+          {
+            "flow_id": 88,
+            "risk_score": 0.0024,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9976,
+            "latency_ms": 96.67
+          },
+          {
+            "flow_id": 89,
+            "risk_score": 0.0027,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9973,
+            "latency_ms": 67.79
+          },
+          {
+            "flow_id": 90,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 74.7
+          },
+          {
+            "flow_id": 91,
+            "risk_score": 0.0017,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9983,
+            "latency_ms": 69.63
+          },
+          {
+            "flow_id": 92,
+            "risk_score": 0.0025,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9975,
+            "latency_ms": 69.12
+          },
+          {
+            "flow_id": 93,
+            "risk_score": 0.0023,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9977,
+            "latency_ms": 117.65
+          },
+          {
+            "flow_id": 94,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 89.05
+          },
+          {
+            "flow_id": 95,
+            "risk_score": 0.0022,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9978,
+            "latency_ms": 71.67
+          },
+          {
+            "flow_id": 96,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 76.1
+          },
+          {
+            "flow_id": 97,
+            "risk_score": 0.0022,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9978,
+            "latency_ms": 67.64
+          },
+          {
+            "flow_id": 98,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 68.5
+          },
+          {
+            "flow_id": 99,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 74.72
+          },
+          {
+            "flow_id": 100,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 75.36
+          },
+          {
+            "flow_id": 101,
+            "risk_score": 0.0018,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9982,
+            "latency_ms": 78.37
+          },
+          {
+            "flow_id": 102,
+            "risk_score": 0.0022,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9978,
+            "latency_ms": 70.27
+          },
+          {
+            "flow_id": 103,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 93.62
+          },
+          {
+            "flow_id": 104,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 64.76
+          }
+        ],
+        "counts": {
+          "ALLOW": 20,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 0
+        }
+      },
+      "zeek": "zeek_unavailable",
+      "full_feature": {
+        "flows": [
+          {
+            "flow_id": 126,
+            "risk_score": 0.8995,
+            "classification": "R2L",
+            "action": "BLOCK",
+            "confidence": 0.8981,
+            "latency_ms": 68.91
+          }
+        ],
+        "counts": {
+          "ALLOW": 0,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 1
+        }
+      }
+    },
+    "u2r": {
+      "conn_log": {
+        "flows": [
+          {
+            "flow_id": 105,
+            "risk_score": 0.0018,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9982,
+            "latency_ms": 69.18
+          },
+          {
+            "flow_id": 106,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 69.64
+          },
+          {
+            "flow_id": 107,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 71.23
+          },
+          {
+            "flow_id": 108,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 84.12
+          },
+          {
+            "flow_id": 109,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 93.49
+          },
+          {
+            "flow_id": 110,
+            "risk_score": 0.0024,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9976,
+            "latency_ms": 63.68
+          },
+          {
+            "flow_id": 111,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 77.49
+          },
+          {
+            "flow_id": 112,
+            "risk_score": 0.002,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.998,
+            "latency_ms": 67.67
+          },
+          {
+            "flow_id": 113,
+            "risk_score": 0.0018,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9982,
+            "latency_ms": 74.12
+          },
+          {
+            "flow_id": 114,
+            "risk_score": 0.0018,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9982,
+            "latency_ms": 68.7
+          },
+          {
+            "flow_id": 115,
+            "risk_score": 0.0021,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9979,
+            "latency_ms": 70.8
+          },
+          {
+            "flow_id": 116,
+            "risk_score": 0.0029,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9971,
+            "latency_ms": 70.89
+          },
+          {
+            "flow_id": 117,
+            "risk_score": 0.0019,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9981,
+            "latency_ms": 74.5
+          },
+          {
+            "flow_id": 118,
+            "risk_score": 0.0031,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9969,
+            "latency_ms": 173.46
+          },
+          {
+            "flow_id": 119,
+            "risk_score": 0.0036,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9964,
+            "latency_ms": 75.56
+          },
+          {
+            "flow_id": 120,
+            "risk_score": 0.0022,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9978,
+            "latency_ms": 70.66
+          },
+          {
+            "flow_id": 121,
+            "risk_score": 0.0024,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9976,
+            "latency_ms": 67.42
+          },
+          {
+            "flow_id": 122,
+            "risk_score": 0.0017,
+            "classification": "Normal",
+            "action": "ALLOW",
+            "confidence": 0.9983,
+            "latency_ms": 91.47
+          }
+        ],
+        "counts": {
+          "ALLOW": 18,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 0,
+          "BLOCK": 0
+        }
+      },
+      "zeek": "zeek_unavailable",
+      "full_feature": {
+        "flows": [
+          {
+            "flow_id": 127,
+            "risk_score": 0.5723,
+            "classification": "R2L",
+            "action": "CHALLENGE_MFA",
+            "confidence": 0.4552,
+            "latency_ms": 65.27
+          }
+        ],
+        "counts": {
+          "ALLOW": 0,
+          "MONITOR": 0,
+          "CHALLENGE_MFA": 1,
+          "BLOCK": 0
+        }
+      }
+    }
+  },
+  "assessment": "ASSESSMENT\n------------------------------------------------------------\n  NORMAL conn.log path: {'ALLOW': 24, 'MONITOR': 0, 'CHALLENGE_MFA': 0, 'BLOCK': 0}  -> dominant: ALLOW\n  DOS    conn.log path: {'ALLOW': 25, 'MONITOR': 0, 'CHALLENGE_MFA': 0, 'BLOCK': 0}  -> dominant: ALLOW\n  PROBE  conn.log path: {'ALLOW': 35, 'MONITOR': 0, 'CHALLENGE_MFA': 0, 'BLOCK': 0}  -> dominant: ALLOW\n  R2L    conn.log path: {'ALLOW': 20, 'MONITOR': 0, 'CHALLENGE_MFA': 0, 'BLOCK': 0}  -> dominant: ALLOW\n  U2R    conn.log path: {'ALLOW': 18, 'MONITOR': 0, 'CHALLENGE_MFA': 0, 'BLOCK': 0}  -> dominant: ALLOW\n\n  Normal    -> ALLOW (low risk, SF connections to http/dns).\n  DoS       -> BLOCK/CHALLENGE_MFA via S0 flag + high serror_rate.\n  Probe     -> CHALLENGE_MFA/BLOCK via REJ flag + high rerror_rate.\n  R2L / U2R -> conn.log path lacks content features (num_failed_logins,\n               root_shell, etc.); shown correctly on the full-feature run.\n\n  Full-feature API run (hand-crafted profiles with windowed fields):\n    NORMAL -> risk=0.868  class=DoS  action=BLOCK\n    DOS    -> risk=0.930  class=DoS  action=BLOCK\n    PROBE  -> risk=0.028  class=Normal  action=ALLOW\n    R2L    -> risk=0.899  class=R2L  action=BLOCK\n    U2R    -> risk=0.572  class=R2L  action=CHALLENGE_MFA\n\n  Docker daemon: DOWN (daemon not running).  Zeek image: not pulled.\n  Zeek pcap path skipped; conn.log path used as the reliable fallback.\n  Scapy: installed"
+}
