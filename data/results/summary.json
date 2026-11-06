@@ -5,7 +5,13 @@
     "Precision": 0.8016,
     "Recall (TPR)": 0.5501,
     "F1 Score": 0.6524,
-    "False Positive Rate": 0.1799
+    "False Positive Rate": 0.1799,
+    "Response Time (ms/sample)": 0.0001,
+    "DoS Detection": 0.5497,
+    "Probe Detection": 0.5477,
+    "R2L Detection": 0.5532,
+    "U2R Detection": 0.5373,
+    "Zero-Day Detection": false
   },
   {
     "System": "ZTA Only",
@@ -13,14 +19,40 @@
     "Precision": 0.8985,
     "Recall (TPR)": 0.6701,
     "F1 Score": 0.7677,
-    "False Positive Rate": 0.1
+    "False Positive Rate": 0.1,
+    "Response Time (ms/sample)": 0.0,
+    "DoS Detection": 0.6674,
+    "Probe Detection": 0.6774,
+    "R2L Detection": 0.6724,
+    "U2R Detection": 0.597,
+    "Zero-Day Detection": false
   },
   {
-    "System": "ZTA + ML (Proposed)",
-    "Accuracy": 0.815,
-    "Precision": 0.962,
-    "Recall (TPR)": 0.7027,
-    "F1 Score": 0.8122,
-    "False Positive Rate": 0.0367
+    "System": "ZTA + CNN-GRU (Supervised)",
+    "Accuracy": 0.7945,
+    "Precision": 0.9516,
+    "Recall (TPR)": 0.6732,
+    "F1 Score": 0.7886,
+    "False Positive Rate": 0.0452,
+    "Response Time (ms/sample)": 0.5889,
+    "DoS Detection": 0.817,
+    "Probe Detection": 0.5713,
+    "R2L Detection": 0.3941,
+    "U2R Detection": 0.3582,
+    "Zero-Day Detection": false
+  },
+  {
+    "System": "ZTA + Autoencoder (Self-Supervised)",
+    "Accuracy": 0.8443,
+    "Precision": 0.9528,
+    "Recall (TPR)": 0.7643,
+    "F1 Score": 0.8482,
+    "False Positive Rate": 0.0501,
+    "Response Time (ms/sample)": 0.0656,
+    "DoS Detection": 0.9113,
+    "Probe Detection": 0.8819,
+    "R2L Detection": 0.2873,
+    "U2R Detection": 0.6866,
+    "Zero-Day Detection": true
   }
 ]
