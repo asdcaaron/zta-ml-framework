@@ -50,8 +50,8 @@ def build_autoencoder(input_dim: int = 40,
     Build a deep autoencoder for self-supervised anomaly detection.
 
     Architecture:
-      Encoder: input_dim → 32 → 16 → encoding_dim
-      Decoder: encoding_dim → 16 → 32 → input_dim
+      Encoder: input_dim → 128 → 64 → encoding_dim
+      Decoder: encoding_dim → 64 → 128 → input_dim
 
     Parameters
     ----------
@@ -79,9 +79,6 @@ def build_autoencoder(input_dim: int = 40,
     x = layers.BatchNormalization(name='enc_bn2')(x)
     x = layers.Dropout(dropout_rate, name='enc_drop2')(x)
 
-    x = layers.Dense(32, activation='relu',
-                     name='enc_dense3')(x)
-
     encoded = layers.Dense(encoding_dim, activation='relu',
                            name='bottleneck')(x)
 
@@ -90,18 +87,15 @@ def build_autoencoder(input_dim: int = 40,
     # ── Decoder ───────────────────────────────────────────────────────────
     dec_input = tf.keras.Input(shape=(encoding_dim,), name='decoder_input')
 
-    x = layers.Dense(32, activation='relu',
-                     name='dec_dense1')(dec_input)
-
     x = layers.Dense(64, activation='relu',
                      kernel_regularizer=regularizers.l2(1e-4),
-                     name='dec_dense2')(x)
+                     name='dec_dense1')(dec_input)
     x = layers.BatchNormalization(name='dec_bn1')(x)
     x = layers.Dropout(dropout_rate, name='dec_drop1')(x)
 
     x = layers.Dense(128, activation='relu',
                      kernel_regularizer=regularizers.l2(1e-4),
-                     name='dec_dense3')(x)
+                     name='dec_dense2')(x)
     x = layers.BatchNormalization(name='dec_bn2')(x)
     x = layers.Dropout(dropout_rate, name='dec_drop2')(x)
 
@@ -386,7 +380,8 @@ def plot_reconstruction_errors(autoencoder: Model,
                                X_test: np.ndarray,
                                y_test: np.ndarray,
                                threshold: float,
-                               out_dir: str = 'data'):
+                               out_dir: str = 'data',
+                               filename: str = 'reconstruction_error_distribution.png'):
     """
     Plot reconstruction error distributions for normal vs attack traffic.
     Shows visually how well the threshold separates the two.
@@ -417,7 +412,7 @@ def plot_reconstruction_errors(autoencoder: Model,
     ax.set_xlim(0, min(threshold * 5, errors.max()))
     ax.grid(True, alpha=0.4)
     plt.tight_layout()
-    path = os.path.join(out_dir, 'reconstruction_error_distribution.png')
+    path = os.path.join(out_dir, filename)
     plt.savefig(path, dpi=150)
     plt.close()
     print(f"[autoencoder] Error distribution plot saved to {path}")

@@ -217,7 +217,7 @@ python src/zeek_capture.py --mode log --file data/logs/conn.log
 | Component | Detail |
 |---|---|
 | Input | 40 features (flattened) |
-| Architecture | Encoder: 40→128→64→32→16 | Decoder: 16→32→64→128→40 |
+| Architecture | Encoder: 40→128→64→16 | Decoder: 16→64→128→40 |
 | Parameters | ~55,000 |
 | Output | Reconstruction error (MSE) |
 | Training data | **Normal traffic only** — 67,343 samples, no labels used |
