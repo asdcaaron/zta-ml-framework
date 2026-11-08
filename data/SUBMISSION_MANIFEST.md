@@ -17,7 +17,7 @@
 | `src/train.py` | Trains CNN-GRU and autoencoder sequentially on NSL-KDD. Saves all model artifacts to `data/`. | Complete |
 | `src/train_autoencoder.py` | Standalone autoencoder training script. Computes 95th-percentile reconstruction-error threshold on normal test traffic. | Complete |
 | `src/evaluate.py` | Four-way comparison: Legacy VPN vs ZTA Only vs ZTA+CNN-GRU vs ZTA+Autoencoder. Metrics: Accuracy, F1, FPR, Response Time, Zero-Day. | Complete |
-| `src/api.py` | Flask REST API on port 5000. Endpoints: `/predict`, `/predict/batch`, `/health`, `/model/info`. Loads both models, computes combined risk score, enforces ZTA policy. | Complete |
+| `src/api.py` | Flask REST API on port 5000. Endpoints: `/predict`, `/predict/batch`, `/health`, `/model/info`. Loads both models, computes combined risk score, enforces ZTA policy. (policy decision layer only — enforcement plane integration required for live network blocking) | Complete |
 | `src/zeek_capture.py` | Zeek (Docker) traffic capture pipeline: pcap → conn.log → Flask API → audit.jsonl. | Complete |
 | `src/generate_attack_traffic.py` | Scapy-crafted pcaps and Zeek-format conn.logs for all 5 NSL-KDD classes. Used in GNS3 lab demo. | Complete |
 | `src/run_gns3_demo.py` | End-to-end GNS3 hybrid-workforce demo orchestrator. Scores traffic via three paths: conn.log, Zeek-Docker, and direct API. | Complete |

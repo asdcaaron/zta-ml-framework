@@ -1,20 +1,22 @@
 """
 evaluate.py
 -----------
-Four-way comparative evaluation for the Risk-Adaptive ZTA framework:
+Five-way comparative evaluation for the Risk-Adaptive ZTA framework:
 
-  System A — Legacy VPN (OpenVPN)        : perimeter-based, no ML
-  System B — ZTA Only                    : Zero Trust, no ML
+  System A — Legacy VPN (OpenVPN)        : perimeter-based, no ML  [simulated]
+  System B — ZTA Only                    : Zero Trust, no ML        [simulated]
   System C — ZTA + CNN-GRU (Supervised)  : Zero Trust + known attack classifier
   System D — ZTA + Autoencoder (Self-Supervised) : Zero Trust + zero-day detector
+  System E — ZTA + CNN-GRU + Autoencoder (Fusion) : dual-model combined risk
 
-All four systems are scored on the SAME NSL-KDD test set with the SAME
+All five systems are scored on the SAME NSL-KDD test set with the SAME
 metrics (Accuracy, F1, FPR, measured per-prediction latency, and
 per-attack-type detection) so the comparison is controlled and fair.
 
   System C uses the trained CNN-GRU classifier   (data/cnn_gru_model.keras)
   System D uses the trained autoencoder + 95th-pct threshold
              (data/autoencoder_model.keras + data/ae_threshold.pkl)
+  System E combines C+D: combined_risk = max(cnn_risk, ae_risk)
   Systems A/B are simulated baselines (no ML model exists for them — they
   represent architectures without anomaly detection).
 
@@ -72,6 +74,7 @@ SYSTEM_PROFILES = {
         'encrypted_traffic_detection': False,
         'micro_segmentation': False,
         'continuous_auth': False,
+        'simulated': True,
     },
     'ZTA Only': {
         'description': 'Zero Trust Architecture without ML. '
@@ -91,6 +94,7 @@ SYSTEM_PROFILES = {
         'encrypted_traffic_detection': False,
         'micro_segmentation': True,
         'continuous_auth': True,
+        'simulated': True,
     },
     'ZTA + CNN-GRU (Supervised)': {
         'description': 'Zero Trust + supervised CNN-GRU classifier. '
@@ -103,6 +107,7 @@ SYSTEM_PROFILES = {
         'micro_segmentation': True,
         'continuous_auth': True,
         'zero_day_detection': False,
+        'simulated': False,
     },
     'ZTA + Autoencoder (Self-Supervised)': {
         'description': 'Zero Trust + self-supervised autoencoder. '
@@ -115,6 +120,21 @@ SYSTEM_PROFILES = {
         'micro_segmentation': True,
         'continuous_auth': True,
         'zero_day_detection': True,
+        'simulated': False,
+    },
+    'ZTA + CNN-GRU + Autoencoder (Fusion)': {
+        'description': 'Zero Trust + dual-model fusion: CNN-GRU (supervised) '
+                       '+ Autoencoder (self-supervised). '
+                       'Combined risk = max(cnn_risk, ae_risk).',
+        'detection_noise': 0.04,
+        'false_positive_rate_base': 0.03,
+        'avg_response_time_sec': 2.0,
+        'lateral_movement_blocked': True,
+        'encrypted_traffic_detection': True,
+        'micro_segmentation': True,
+        'continuous_auth': True,
+        'zero_day_detection': True,
+        'simulated': False,
     },
 }
 
@@ -195,6 +215,7 @@ def compute_metrics(system_name: str,
 
     metrics = {
         'System':                    system_name,
+        'Simulated':                 profile.get('simulated', False),
         'Accuracy':                  round(accuracy_score(y_true_binary, y_pred), 4),
         'Precision':                 round(precision_score(y_true_binary, y_pred,
                                            zero_division=0), 4),
@@ -298,8 +319,15 @@ def evaluate_autoencoder_system(model_dir: str,
 def plot_comparison_bar(df: pd.DataFrame, out_dir: str):
     """Bar chart comparing accuracy, F1, and FPR across systems."""
     metrics = ['Accuracy', 'F1 Score', 'False Positive Rate']
-    fig, axes = plt.subplots(1, 3, figsize=(16, 6))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     colors = ['#e74c3c', '#3498db', '#2ecc71']
+
+    # Build x-axis labels: append ' *' for simulated systems
+    simulated_map = dict(zip(df['System'], df['Simulated'])) if 'Simulated' in df.columns else {}
+    display_labels = [
+        (name + ' *' if simulated_map.get(name, False) else name)
+        for name in df['System']
+    ]
 
     for ax, metric, color in zip(axes, metrics, colors):
         vals = df.set_index('System')[metric].astype(float)
@@ -310,16 +338,19 @@ def plot_comparison_bar(df: pd.DataFrame, out_dir: str):
         ax.set_ylabel(metric)
         ax.set_ylim(0, 1.1)
         ax.set_xticks(list(x_pos))
-        ax.set_xticklabels(list(vals.index), rotation=15, ha='right', fontsize=9)
+        ax.set_xticklabels(display_labels, rotation=20, ha='right', fontsize=8)
         for bar, val in zip(bars, vals.values):
             ax.text(bar.get_x() + bar.get_width() / 2,
                     bar.get_height() + 0.02,
                     f'{val:.3f}', ha='center', fontsize=9)
         ax.grid(axis='y', linestyle='--', alpha=0.5)
 
-    plt.suptitle('Risk-Adaptive ZTA: 4-Way System Comparison',
-                 fontsize=14, fontweight='bold', y=1.02)
-    plt.tight_layout()
+    plt.suptitle('Risk-Adaptive ZTA: System Comparison (* = simulated baseline)',
+                 fontsize=13, fontweight='bold', y=1.02)
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
+    plt.figtext(0.5, 0.01,
+                '* simulated baseline (not a real deployment)',
+                ha='center', fontsize=9, style='italic', color='#555555')
     path = os.path.join(out_dir, 'comparison_bar.png')
     plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
@@ -357,7 +388,7 @@ def plot_confusion_matrices(systems_preds: dict,
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Four-way system comparison evaluation'
+        description='Five-way system comparison evaluation'
     )
     parser.add_argument('--train', default='data/NSL_KDD_Train.csv')
     parser.add_argument('--test',  default='data/NSL_KDD_Test.csv')
@@ -419,6 +450,31 @@ def run_evaluation(args):
                   f"mean err normal={np.mean(errors[y_test == 0]):.6f}  "
                   f"mean err attack={np.mean(errors[y_test > 0]):.6f}")
 
+        elif system_name == 'ZTA + CNN-GRU + Autoencoder (Fusion)':
+            # System E — REAL dual-model fusion: CNN-GRU + Autoencoder combined
+            print("  >> Using trained CNN-GRU + Autoencoder fusion (dual-model)")
+            cnn_model = tf.keras.models.load_model(args.model)
+            autoencoder, encoder, ae_thresh = load_autoencoder(
+                os.path.dirname(args.model)
+            )
+            t0 = time.perf_counter()
+            # CNN-GRU inference
+            cnn_probs = cnn_model.predict(X_test, verbose=0)   # (N, 5)
+            cnn_risk_scores = 1.0 - cnn_probs[:, 0]            # 1 - P(Normal)
+            # Autoencoder inference
+            X_flat = X_test.reshape(X_test.shape[0], -1)       # (N, 40)
+            ae_errors, ae_is_anomaly, ae_risk_scores = predict_anomaly(
+                autoencoder, X_flat, ae_thresh
+            )
+            # Fuse: take the more conservative (higher) risk score
+            combined_risk = np.maximum(cnn_risk_scores, ae_risk_scores)
+            # Flag as attack if combined_risk > 0.3 (MONITOR threshold)
+            y_pred = (combined_risk > 0.3).astype(int)
+            infer_sec = time.perf_counter() - t0
+            print(f"     ae_threshold={float(ae_thresh):.6f}  "
+                  f"mean combined_risk normal={float(np.mean(combined_risk[y_test == 0])):.4f}  "
+                  f"mean combined_risk attack={float(np.mean(combined_risk[y_test > 0])):.4f}")
+
         else:
             # Systems A/B — simulated baselines (no ML model exists)
             t0 = time.perf_counter()
@@ -458,7 +514,7 @@ def run_evaluation(args):
 
     # Print final comparison table
     print("\n" + "=" * 95)
-    print("  FINAL 4-WAY COMPARISON")
+    print("  FINAL 5-WAY COMPARISON")
     print("=" * 95)
     summary_cols = ['System', 'Accuracy', 'F1 Score',
                     'False Positive Rate', 'Response Time (ms/sample)',

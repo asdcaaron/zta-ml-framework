@@ -333,6 +333,12 @@ Other endpoints: `GET /` (dashboard), `GET /health`, `GET /model/info`, `POST /p
 
 ---
 
+## Enforcement Scope
+
+> **Note:** The API returns policy decision labels (ALLOW, MONITOR, CHALLENGE_MFA, BLOCK). Actual network enforcement (firewall rules, session termination, MFA triggers) requires integration with an enforcement plane (e.g., firewall API, ZTNA controller). This prototype demonstrates the decision layer only (policy decision only — enforcement plane integration required for live blocking).
+
+---
+
 ## References
 
 1. Gambo & Almulhem (2026). Zero Trust Architecture: A Systematic Literature Review. *Journal of Network and Systems Management*, 34(1).

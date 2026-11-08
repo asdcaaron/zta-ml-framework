@@ -1,5 +1,6 @@
-System,Accuracy,Precision,Recall (TPR),F1 Score,False Positive Rate,Response Time (ms/sample),Avg Response Time,Lateral Movement Blocked,Encrypted Traffic Detect,Micro-Segmentation,Continuous Auth,Zero-Day Detection,TP,FP,TN,FN,DoS Detection,Probe Detection,R2L Detection,U2R Detection
-Legacy VPN (OpenVPN),0.6664,0.8016,0.5501,0.6524,0.1799,0.0001,Manual (hours),False,False,False,False,False,7059,1747,7963,5774,0.5497,0.5477,0.5532,0.5373
-ZTA Only,0.7691,0.8985,0.6701,0.7677,0.1,0.0,7.5s,True,False,True,True,False,8599,971,8739,4234,0.6674,0.6774,0.6724,0.597
-ZTA + CNN-GRU (Supervised),0.7945,0.9516,0.6732,0.7886,0.0452,0.5889,1.8s,True,True,True,True,False,8639,439,9271,4194,0.817,0.5713,0.3941,0.3582
-ZTA + Autoencoder (Self-Supervised),0.8443,0.9528,0.7643,0.8482,0.0501,0.0656,1.5s,True,True,True,True,True,9808,486,9224,3025,0.9113,0.8819,0.2873,0.6866
+System,Simulated,Accuracy,Precision,Recall (TPR),F1 Score,False Positive Rate,Response Time (ms/sample),Avg Response Time,Lateral Movement Blocked,Encrypted Traffic Detect,Micro-Segmentation,Continuous Auth,Zero-Day Detection,TP,FP,TN,FN,DoS Detection,Probe Detection,R2L Detection,U2R Detection
+Legacy VPN (OpenVPN),True,0.6664,0.8016,0.5501,0.6524,0.1799,0.0001,Manual (hours),False,False,False,False,False,7059,1747,7963,5774,0.5497,0.5477,0.5532,0.5373
+ZTA Only,True,0.7691,0.8985,0.6701,0.7677,0.1,0.0,7.5s,True,False,True,True,False,8599,971,8739,4234,0.6674,0.6774,0.6724,0.597
+ZTA + CNN-GRU (Supervised),False,0.7945,0.9516,0.6732,0.7886,0.0452,0.3615,1.8s,True,True,True,True,False,8639,439,9271,4194,0.817,0.5713,0.3941,0.3582
+ZTA + Autoencoder (Self-Supervised),False,0.8584,0.9453,0.7974,0.8651,0.061,0.0647,1.5s,True,True,True,True,True,10233,592,9118,2600,0.9117,0.9467,0.3792,0.6866
+ZTA + CNN-GRU + Autoencoder (Fusion),False,0.889,0.9214,0.8801,0.9003,0.0992,0.4172,2.0s,True,True,True,True,True,11294,963,8747,1539,0.9538,0.9905,0.5993,0.7761
