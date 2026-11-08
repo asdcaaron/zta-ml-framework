@@ -59,40 +59,47 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # ── NSL-KDD feature defaults (for fields Zeek cannot provide directly) ────────
 FEATURE_DEFAULTS = {
-    'land':                   0,
-    'wrong_fragment':         0,
-    'urgent':                 0,
-    'hot':                    0,
-    'num_failed_logins':      0,
-    'logged_in':              0,
-    'num_compromised':        0,
-    'root_shell':             0,
-    'su_attempted':           0,
-    'num_root':               0,
-    'num_file_creations':     0,
-    'num_shells':             0,
-    'num_access_files':       0,
-    'num_outbound_cmds':      0,
-    'is_host_login':          0,
-    'is_guest_login':         0,
-    'serror_rate':            0.0,
-    'srv_serror_rate':        0.0,
-    'rerror_rate':            0.0,
-    'srv_rerror_rate':        0.0,
-    'same_srv_rate':          1.0,
-    'diff_srv_rate':          0.0,
-    'srv_diff_host_rate':     0.0,
-    'dst_host_count':         255,
-    'dst_host_srv_count':     255,
-    'dst_host_same_srv_rate': 1.0,
-    'dst_host_diff_srv_rate': 0.0,
-    'dst_host_same_src_port_rate': 0.0,
-    'dst_host_srv_diff_host_rate': 0.0,
-    'dst_host_serror_rate':   0.0,
-    'dst_host_srv_serror_rate': 0.0,
-    'dst_host_rerror_rate':   0.0,
-    'dst_host_srv_rerror_rate': 0.0,
+    'land':                   0,          # DEFAULT (src/dst IP:port same — not tracked per-conn by Zeek)
+    'wrong_fragment':         0,          # DEFAULT (fragment counts not in Zeek conn.log)
+    'urgent':                 0,          # DEFAULT (TCP urgent pointer count not in conn.log)
+    'hot':                    0,          # DEFAULT (content-level indicator — requires payload inspection)
+    'num_failed_logins':      0,          # DEFAULT (application-layer metric — not in conn.log)
+    'logged_in':              0,          # DEFAULT (login success state — application layer, not conn.log)
+    'num_compromised':        0,          # DEFAULT (compromised conditions count — application layer)
+    'root_shell':             0,          # DEFAULT (shell obtained indicator — application layer)
+    'su_attempted':           0,          # DEFAULT (su/sudo attempt — application layer)
+    'num_root':               0,          # DEFAULT (root accesses count — application layer)
+    'num_file_creations':     0,          # DEFAULT (file creation ops — application layer)
+    'num_shells':             0,          # DEFAULT (shell prompts count — application layer)
+    'num_access_files':       0,          # DEFAULT (operations on access control files — application layer)
+    'num_outbound_cmds':      0,          # DEFAULT (dropped by preprocess.py; kept here for schema completeness)
+    'is_host_login':          0,          # DEFAULT (login to host accounts — application layer)
+    'is_guest_login':         0,          # DEFAULT (guest login indicator — application layer)
+    'serror_rate':            0.0,        # DEFAULT (SYN error rate — requires window-level stats not in single conn.log row)
+    'srv_serror_rate':        0.0,        # DEFAULT (SYN error rate to same service — window-level stats)
+    'rerror_rate':            0.0,        # DEFAULT (REJ error rate — window-level stats)
+    'srv_rerror_rate':        0.0,        # DEFAULT (REJ error rate to same service — window-level stats)
+    'same_srv_rate':          1.0,        # DEFAULT (fraction same-service connections — window-level stats)
+    'diff_srv_rate':          0.0,        # DEFAULT (fraction different-service connections — window-level stats)
+    'srv_diff_host_rate':     0.0,        # DEFAULT (fraction connections to different hosts — window-level stats)
+    'dst_host_count':         255,        # DEFAULT (host-level connection count — window-level stats)
+    'dst_host_srv_count':     255,        # DEFAULT (host-level same-service count — window-level stats)
+    'dst_host_same_srv_rate': 1.0,        # DEFAULT (host same-service rate — window-level stats)
+    'dst_host_diff_srv_rate': 0.0,        # DEFAULT (host different-service rate — window-level stats)
+    'dst_host_same_src_port_rate': 0.0,   # DEFAULT (host same-source-port rate — window-level stats)
+    'dst_host_srv_diff_host_rate': 0.0,   # DEFAULT (host service different-host rate — window-level stats)
+    'dst_host_serror_rate':   0.0,        # DEFAULT (host SYN error rate — window-level stats)
+    'dst_host_srv_serror_rate': 0.0,      # DEFAULT (host service SYN error rate — window-level stats)
+    'dst_host_rerror_rate':   0.0,        # DEFAULT (host REJ error rate — window-level stats)
+    'dst_host_srv_rerror_rate': 0.0,      # DEFAULT (host service REJ error rate — window-level stats)
 }
+
+# ── Startup warning about fixed-default features ──────────────────────────────
+logging.warning(
+    "zeek_capture: several NSL-KDD features are set to fixed defaults "
+    "(cannot be observed from Zeek conn.log). See data/gns3/zeek_feature_mapping.md "
+    "for details. This may cause distribution shift vs. NSL-KDD-trained models."
+)
 
 
 # ── Zeek log → feature dict ───────────────────────────────────────────────────
@@ -113,15 +120,15 @@ def parse_conn_log_row(row: dict) -> dict:
             return default
 
     features = {
-        'duration':      safe_float(row.get('duration')),
-        'protocol_type': str(row.get('proto', 'tcp')).lower(),
+        'duration':      safe_float(row.get('duration')),                          # DIRECT
+        'protocol_type': str(row.get('proto', 'tcp')).lower(),                     # DIRECT
         'service':       str(row.get('service', 'other')).lower()
-                             .replace('-', 'other'),
-        'flag':          str(row.get('conn_state', 'OTH')),
-        'src_bytes':     safe_float(row.get('orig_bytes')),
-        'dst_bytes':     safe_float(row.get('resp_bytes')),
-        'count':         safe_float(row.get('orig_pkts')),
-        'srv_count':     safe_float(row.get('resp_pkts')),
+                             .replace('-', 'other'),                               # DIRECT
+        'flag':          str(row.get('conn_state', 'OTH')),                        # DIRECT
+        'src_bytes':     safe_float(row.get('orig_bytes')),                        # DIRECT
+        'dst_bytes':     safe_float(row.get('resp_bytes')),                        # DIRECT
+        'count':         safe_float(row.get('orig_pkts')),                         # DERIVED (orig_pkts used as proxy for NSL-KDD count)
+        'srv_count':     safe_float(row.get('resp_pkts')),                         # DERIVED (resp_pkts used as proxy for NSL-KDD srv_count)
     }
     # Fill remaining features with defaults
     features.update(FEATURE_DEFAULTS)

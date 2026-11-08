@@ -302,7 +302,10 @@ def generate():
         'normal traffic only (67,343 samples, no attack labels). It achieves 0.8443 '
         'accuracy by measuring reconstruction error against a 95th-percentile '
         'threshold. Mean reconstruction error for attacks is ~19× higher than for '
-        'normal traffic. Zero-day recall: DoS=0.911, Probe=0.882, U2R=0.687.',
+        'normal traffic. Zero-day recall: DoS=0.911, Probe=0.882, U2R=0.687. '
+        'The autoencoder uses reconstruction-based anomaly detection — a self-supervised '
+        'approach where the model learns to reconstruct normal traffic; samples with high '
+        'reconstruction error are flagged as anomalies without requiring attack labels.',
         '<b>Flask REST API:</b> Production-ready risk-scoring API with /predict, '
         '/predict/batch, /health, and /model/info endpoints. Loads both models at '
         'startup, computes the combined risk score, and enforces ZTA policy (ALLOW / '

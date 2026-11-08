@@ -1,6 +1,6 @@
 # Risk-Adaptive Zero Trust for Securing Hybrid Workforces Using Self-Supervised Anomaly Detection
 
-A dual-layer ML framework that combines a supervised CNN-GRU and a self-supervised autoencoder inside a Zero Trust policy engine to detect known and zero-day attacks in hybrid workforce networks.
+A dual-layer ML framework that combines a supervised CNN-GRU and a self-supervised (reconstruction-based; trained on normal traffic only, no attack labels required) autoencoder inside a Zero Trust policy engine to detect known and zero-day attacks in hybrid workforce networks.
 
 **Author:** Okado Aaron Obbo — Reg No: S24B23/015 | Student No: B29782
 **Degree:** BSc Computer Science | Uganda Christian University, Department of Computing & Technology
@@ -18,7 +18,7 @@ This project addresses the gap by pairing ZTA with two complementary ML layers:
 | Layer | Model | Type | Purpose |
 |---|---|---|---|
 | Layer 1 | **CNN-GRU** | Supervised | Classifies known attacks: DoS, Probe, R2L, U2R |
-| Layer 2 | **Autoencoder** | Self-Supervised | Detects unknown / zero-day anomalies without labels |
+| Layer 2 | **Autoencoder** | Self-Supervised (reconstruction-based; trained on normal traffic only, no attack labels required) | Detects unknown / zero-day anomalies without labels |
 
 The dual-layer output feeds a combined **risk score (0–1)** into the ZTA policy engine, which maps each connection to an ALLOW / MONITOR / CHALLENGE_MFA / BLOCK decision in real time. The system is evaluated in a controlled four-way comparison against Legacy VPN, ZTA-Only, and ZTA+CNN-GRU baselines on the NSL-KDD benchmark dataset.
 
@@ -113,7 +113,7 @@ python src/api.py
 ### Training
 
 ```powershell
-# Train CNN-GRU (supervised) + Autoencoder (self-supervised) together
+# Train CNN-GRU (supervised) + Autoencoder (self-supervised; reconstruction-based; trained on normal traffic only, no attack labels required) together
 python src/train.py
 
 # Train autoencoder only
@@ -190,7 +190,7 @@ Four-way comparison on NSL-KDD (22,543 test samples):
 
 **Key findings:**
 - ZTA + Autoencoder achieves the highest accuracy and F1, and is ~9× faster than CNN-GRU at inference.
-- The self-supervised autoencoder detects zero-day attacks without any attack labels in training.
+- The self-supervised (reconstruction-based; trained on normal traffic only, no attack labels required) autoencoder detects zero-day attacks without any attack labels in training.
 - R2L recall is 0.287 — those connections reconstruct like normal traffic (documented limitation).
 - CNN-GRU wins on FPR (0.0452 vs 0.0501).
 - Both ML systems substantially outperform Legacy VPN and ZTA-Only.
@@ -204,7 +204,7 @@ zta-ml-framework/
 ├── src/
 │   ├── preprocess.py              ← NSL-KDD loading, noise removal, scaling (40 features)
 │   ├── model.py                   ← CNN-GRU architecture (supervised)
-│   ├── autoencoder.py             ← Autoencoder architecture (self-supervised)
+│   ├── autoencoder.py             ← Autoencoder architecture (self-supervised; reconstruction-based; trained on normal traffic only, no attack labels required)
 │   ├── train.py                   ← Trains CNN-GRU + autoencoder sequentially
 │   ├── train_autoencoder.py       ← Trains autoencoder only
 │   ├── evaluate.py                ← 4-way system comparison
@@ -281,7 +281,7 @@ zta-ml-framework/
 | Training | 125,973 labelled samples, class-weighted, 50 epochs |
 | Test accuracy | 0.7945 |
 
-### Autoencoder (Self-Supervised — Layer 2)
+### Autoencoder (Self-Supervised (reconstruction-based; trained on normal traffic only, no attack labels required) — Layer 2)
 
 | Component | Detail |
 |---|---|

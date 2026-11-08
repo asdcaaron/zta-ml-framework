@@ -470,6 +470,11 @@ def generate():
         'flagged as anomalous. Because training requires no attack labels, '
         'the system can in principle detect attack patterns it has never been '
         'shown.', BODY))
+    S.append(Paragraph(
+        'The autoencoder uses reconstruction-based anomaly detection — a self-supervised '
+        'approach where the model learns to reconstruct normal traffic; samples with high '
+        'reconstruction error are flagged as anomalies without requiring attack labels.',
+        BODY))
 
     ae_rows = [
         ['Component', 'Configuration'],
