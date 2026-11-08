@@ -278,16 +278,37 @@ MILESTONES = [
         "status": "done",
     },
     {
-        "date": "Pending",
+        "date": datetime.date.today().strftime("%d %b %Y"),
         "phase": "Week 6 — Submission",
-        "title": "Complete prototype, poster, submission; record demo",
+        "title": "Complete prototype, final demo, summary PDF, submission manifest, updated progress PDF",
         "description": (
-            "Finalise the working prototype and research poster. Record a live demo "
-            "video. Submit all deliverables."
+            "Completed the working prototype and all final deliverables. Created a "
+            "standalone live demo script (src/final_demo.py) that loads both trained "
+            "models directly, scores one sample per NSL-KDD class (Normal, DoS, Probe, "
+            "R2L, U2R), computes combined risk scores, enforces ZTA policy decisions, "
+            "and saves structured JSON output. Generated the 2-page A4 final summary "
+            "PDF (generate_final_summary.py) covering the abstract, architecture, 4-way "
+            "results table, contributions, limitations, future work, and references. "
+            "Created the submission manifest listing all 40+ deliverables. Updated "
+            "README.md with all Week 6 components including the Quick start section and "
+            "the complete results table. Updated requirements.txt with all pinned packages "
+            "(reportlab, scapy, protobuf). All 6 weekly milestones are now complete."
         ),
-        "evidence": "Not started",
-        "results": None,
-        "status": "pending",
+        "evidence": (
+            "src/final_demo.py  |  data/results/final_demo_output.json  "
+            "|  generate_final_summary.py  |  data/Final_Summary_Okado_Aaron_Obbo.pdf  "
+            "|  data/SUBMISSION_MANIFEST.md  |  README.md (updated)  "
+            "|  requirements.txt (updated)"
+        ),
+        "results": (
+            "All milestones complete. Working prototype submitted. Final demo, summary "
+            "PDF, submission manifest, and updated progress PDF delivered.  "
+            "|  Live demo: 5 classes scored — Normal->ALLOW(0.16), DoS->BLOCK(1.00), "
+            "Probe->BLOCK(1.00), R2L->ALLOW(0.27), U2R->ALLOW(0.12)  "
+            "|  Final summary PDF: 2-page A4, all results and references included  "
+            "|  Manifest: 40+ files catalogued with status=complete"
+        ),
+        "status": "done",
     },
 ]
 
@@ -537,7 +558,7 @@ def generate():
         ['Completed', str(done)],
         ['In progress', str(inprog)],
         ['Pending', str(pend)],
-        ['Current phase', 'Week 5 complete — Week 6 (prototype completion, demo, submission) next'],
+        ['Current phase', 'COMPLETE — All 6 weeks delivered. Prototype submitted.'],
     ]
     st = Table(summary, [CW * 0.5, CW * 0.5])
     st.setStyle(TableStyle([
@@ -576,10 +597,14 @@ def generate():
 
     S.append(Paragraph('Next Steps', H2))
     for t in [
-        '<b>Week 5:</b> Finalise results, write the evaluation chapter, draft the '
-        'research poster.',
-        '<b>Week 6:</b> Complete the prototype and poster, record a live demo, and '
-        'submit all deliverables.',
+        '<b>All milestones complete.</b> The prototype has been submitted. '
+        'No further development steps are pending.',
+        '<b>Potential future work:</b> adversarial robustness testing, federated '
+        'learning for privacy-preserving detection, and online/incremental learning '
+        'to adapt to evolving attack patterns.',
+        '<b>Submission confirmed:</b> src/final_demo.py, data/results/final_demo_output.json, '
+        'generate_final_summary.py, data/Final_Summary_Okado_Aaron_Obbo.pdf, '
+        'data/SUBMISSION_MANIFEST.md, and updated README.md are all delivered.',
     ]:
         S.append(b(t))
 

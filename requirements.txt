@@ -1,6 +1,6 @@
 # ZTA + ML Framework — Python Dependencies
 # Install with:
-#   cd "c:\Users\AARON\Desktop\New folder\zta-ml-framework"
+#   cd "c:\Users\AARON\Desktop\Final Year Project Prototype\zta-ml-framework"
 #   pip install -r requirements.txt
 #
 # Tested on Python 3.13
@@ -12,6 +12,9 @@
 
 # ── Deep Learning ─────────────────────────────────────────────────────────────
 tensorflow==2.21.0
+
+# ── Protocol Buffers (required by TensorFlow on this system) ──────────────────
+protobuf==6.31.1
 
 # ── Machine Learning ──────────────────────────────────────────────────────────
 scikit-learn==1.6.1
@@ -29,6 +32,14 @@ requests==2.32.3
 # ── Visualization ─────────────────────────────────────────────────────────────
 matplotlib==3.10.1
 seaborn==0.13.2
+
+# ── PDF Generation ────────────────────────────────────────────────────────────
+reportlab==4.2.5
+
+# ── Network Traffic Generation ────────────────────────────────────────────────
+# Scapy is used in src/generate_attack_traffic.py (optional; pcap generation is
+# best-effort and gracefully skipped if Scapy is not installed)
+scapy==2.6.1
 
 # ── Notebook ──────────────────────────────────────────────────────────────────
 jupyter==1.1.1
