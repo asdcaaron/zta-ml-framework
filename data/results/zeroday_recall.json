@@ -1,0 +1,42 @@
+{
+  "threshold": 0.00268159,
+  "threshold_source": "95th_percentile_normal_test",
+  "scenarios": [
+    {
+      "heldout_class": "DoS",
+      "recall_heldout": 0.9113,
+      "recall_known": 0.5602,
+      "fpr_normal": 0.0501,
+      "n_heldout": 7460,
+      "n_known": 5373,
+      "n_normal": 9710
+    },
+    {
+      "heldout_class": "Probe",
+      "recall_heldout": 0.8819,
+      "recall_known": 0.7369,
+      "fpr_normal": 0.0501,
+      "n_heldout": 2421,
+      "n_known": 10412,
+      "n_normal": 9710
+    },
+    {
+      "heldout_class": "R2L",
+      "recall_heldout": 0.2873,
+      "recall_known": 0.9026,
+      "fpr_normal": 0.0501,
+      "n_heldout": 2885,
+      "n_known": 9948,
+      "n_normal": 9710
+    },
+    {
+      "heldout_class": "U2R",
+      "recall_heldout": 0.6866,
+      "recall_known": 0.7647,
+      "fpr_normal": 0.0501,
+      "n_heldout": 67,
+      "n_known": 12766,
+      "n_normal": 9710
+    }
+  ]
+}

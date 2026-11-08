@@ -1,0 +1,5 @@
+heldout_class,recall_heldout,recall_known,fpr_normal,n_heldout,n_known,n_normal
+DoS,0.9113,0.5602,0.0501,7460,5373,9710
+Probe,0.8819,0.7369,0.0501,2421,10412,9710
+R2L,0.2873,0.9026,0.0501,2885,9948,9710
+U2R,0.6866,0.7647,0.0501,67,12766,9710
