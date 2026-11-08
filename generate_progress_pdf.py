@@ -223,18 +223,34 @@ MILESTONES = [
         "status": "done",
     },
     {
-        "date": "Pending",
+        "date": "21 Nov 2026",
         "phase": "Week 4 — Robustness",
-        "title": "Threshold sensitivity and zero-day recall on unseen attack types",
+        "title": "Threshold sensitivity sweep and zero-day recall on all attack classes",
         "description": (
-            "Sweep the autoencoder threshold across a range of percentiles and measure "
-            "the precision/recall trade-off. Evaluate zero-day recall on unseen attack "
-            "types. Produce a robustness report and a Jupyter notebook documenting the "
-            "findings."
+            "Built src/robustness_analysis.py to evaluate the autoencoder's robustness. "
+            "Swept the anomaly threshold from the 70th to the 99th percentile of normal "
+            "reconstruction errors and recorded precision, recall, F1, and FPR at each "
+            "point. Conducted a leave-one-class-out zero-day recall experiment: scored "
+            "each NSL-KDD attack class independently against the saved 95th-pct threshold "
+            "to measure how well the autoencoder detects each attack type purely from "
+            "reconstruction error (no attack labels). Generated a threshold sweep chart, "
+            "a per-class recall bar chart, and a JSON robustness report."
         ),
-        "evidence": "Not started",
-        "results": None,
-        "status": "pending",
+        "evidence": (
+            "src/robustness_analysis.py  "
+            "|  data/results/threshold_sweep.png  "
+            "|  data/results/zero_day_recall.png  "
+            "|  data/results/robustness_report.json"
+        ),
+        "results": (
+            "Separation ratio: 19.1x (attack mean error vs normal mean error)  "
+            "|  Best F1=0.9214 at 81st pct threshold (precision=0.8717, recall=0.9770, fpr=0.190)  "
+            "|  Saved 95th-pct threshold F1=0.8482  "
+            "|  Zero-day recall: DoS=0.9113 (22x sep), Probe=0.8819 (27.8x sep), "
+            "U2R=0.6866 (24.1x sep), R2L=0.2873 (3.7x sep — R2L reconstructs like normal)  "
+            "|  Test set: 22,543 samples (9,710 normal + 12,833 attack)"
+        ),
+        "status": "done",
     },
     {
         "date": "Pending",
@@ -508,7 +524,7 @@ def generate():
         ['Completed', str(done)],
         ['In progress', str(inprog)],
         ['Pending', str(pend)],
-        ['Current phase', 'Week 3 complete — Week 4 (robustness/threshold sweep) next'],
+        ['Current phase', 'Week 4 complete — Week 5 (finalisation + evaluation chapter) next'],
     ]
     st = Table(summary, [CW * 0.5, CW * 0.5])
     st.setStyle(TableStyle([
@@ -535,12 +551,10 @@ def generate():
         '<b>Full four-way evaluation done:</b> ZTA+Autoencoder beats all baselines on '
         'accuracy and F1, and is ~9x faster than the CNN-GRU at inference. Honest '
         'weakness: R2L detection (0.287) — those connections resemble normal traffic.',
-        '<b>GNS3 hybrid-workforce lab complete (Week 3):</b> Designed a 4-segment '
-        'GNS3 topology (HQ/Branch/DMZ/Internet), generated Scapy pcaps and Zeek-format '
-        'conn.logs for all 5 NSL-KDD classes, and built a full end-to-end demo '
-        'orchestrator (run_gns3_demo.py) scoring 122+ flows via conn.log path and '
-        'hand-crafted full-feature profiles. DoS->BLOCK(0.93), R2L->BLOCK(0.90), '
-        'U2R->CHALLENGE_MFA(0.57). 158 new audit records appended.',
+        '<b>Robustness analysis complete (Week 4):</b> Threshold sweep (70th–99th pct) '
+        'shows best F1=0.9214 at 81st pct. Zero-day recall: DoS=0.91, Probe=0.88, '
+        'U2R=0.69. Confirmed weakness: R2L recall=0.29 (those connections look like '
+        'normal traffic to the autoencoder — documented honestly).',
         '<b>Flask API operational:</b> /predict and /health endpoints serving both '
         'models with combined risk scoring and ZTA policy enforcement.',
     ]:
@@ -549,8 +563,6 @@ def generate():
 
     S.append(Paragraph('Next Steps', H2))
     for t in [
-        '<b>Week 4:</b> Threshold sensitivity sweep and zero-day recall on unseen '
-        'attack types — robustness report and Jupyter notebook.',
         '<b>Week 5:</b> Finalise results, write the evaluation chapter, draft the '
         'research poster.',
         '<b>Week 6:</b> Complete the prototype and poster, record a live demo, and '
