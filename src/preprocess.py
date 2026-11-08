@@ -12,12 +12,15 @@ Usage:
     )
 """
 
+import logging
 import pandas as pd
 import numpy as np
 import joblib
 import os
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.model_selection import train_test_split
+
+log = logging.getLogger(__name__)
 
 # ── Column names for the NSL-KDD dataset ──────────────────────────────────────
 COLUMNS = [
@@ -85,6 +88,35 @@ CLASS_NAMES = {
 }
 
 
+def report_unknown_labels(labels_series, attack_map: dict) -> dict:
+    """
+    Check for label values not present in attack_map and log a warning for each.
+
+    Parameters
+    ----------
+    labels_series : pandas Series (or array) of raw label strings.
+                    Labels should already be stripped/lowercased before calling.
+    attack_map    : dict mapping label strings to integer class ids
+
+    Returns
+    -------
+    dict of {unknown_label: count} for every label not found in attack_map.
+    Returns an empty dict when all labels are known.
+    """
+    import pandas as pd
+    series = pd.Series(labels_series)
+    unknown_counts = {}
+    for label, count in series.value_counts().items():
+        if label not in attack_map:
+            unknown_counts[label] = int(count)
+            log.warning(
+                f"[preprocess] Unknown label encountered: '{label}' "
+                f"(count={count}). Will be mapped to 0 (Normal) for backward "
+                "compatibility."
+            )
+    return unknown_counts
+
+
 def load_and_preprocess(train_path: str,
                         test_path: str,
                         save_artifacts: bool = True,
@@ -119,6 +151,13 @@ def load_and_preprocess(train_path: str,
     train_df['label'] = train_df['label'].str.strip().str.lower()
     test_df['label']  = test_df['label'].str.strip().str.lower()
 
+    # Warn about any unknown labels before mapping (prevents silent data corruption)
+    report_unknown_labels(train_df['label'], ATTACK_MAP)
+    report_unknown_labels(test_df['label'],  ATTACK_MAP)
+
+    # Unknown labels are mapped to 0 (Normal) for backward compatibility after
+    # warning — see report_unknown_labels above. This preserves existing trained
+    # model compatibility while making unknown labels visible in logs.
     train_df['label'] = train_df['label'].map(lambda x: ATTACK_MAP.get(x, 0))
     test_df['label']  = test_df['label'].map(lambda x: ATTACK_MAP.get(x, 0))
 

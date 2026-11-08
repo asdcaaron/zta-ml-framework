@@ -1,3 +1,8 @@
+# This implements reconstruction-based anomaly detection (a form of
+# self-supervised learning where the supervision signal is derived from the
+# data itself — the model learns to reconstruct its own input). The learning
+# signal is the reconstruction error on normal traffic; no external attack
+# labels are used during training.
 """
 train_autoencoder.py
 --------------------
@@ -12,10 +17,12 @@ compatible by construction.
 
 Pipeline:
   1. Load NSL-KDD with the existing scaler/encoders (transform, NOT refit)
-  2. Train the autoencoder on normal-train traffic only (MSE reconstruction)
-  3. Compute the 95th-percentile threshold on NORMAL-TEST traffic
-  4. Evaluate separation: recall on attacks, FPR on normal
-  5. Save model (.keras + .h5), threshold, error-distribution plot, results JSON
+  2. Reserve last 15% of normal-train samples for threshold calibration
+  3. Train the autoencoder on the remaining normal-train traffic (MSE reconstruction)
+  4. Compute the 95th-percentile threshold on the VALIDATION normal split
+     (NOT the test set — avoids data leakage)
+  5. Evaluate separation: recall on attacks, FPR on normal
+  6. Save model (.keras + .h5), threshold, error-distribution plot, results JSON
 
 Usage:
     python src/train_autoencoder.py
@@ -153,10 +160,21 @@ def main(args):
     print(f"[autoencoder-train] Input dim: {X_normal.shape[1]}  "
           f"Encoding dim: {args.encoding_dim}")
 
-    # Validation split from normal-train (10%)
-    val_size = int(0.1 * len(X_normal))
-    X_val_ae = X_normal[:val_size]
-    X_tr_ae  = X_normal[val_size:]
+    # Reserve last 15% of normal train samples for threshold calibration
+    # (prevents data leakage — threshold is not computed on the test set)
+    val_thr_size = int(0.15 * len(X_normal))
+    X_val_normal = X_normal[-val_thr_size:]        # for threshold only
+    X_normal_for_training = X_normal[:-val_thr_size]  # used for Keras fit
+
+    # Further split X_normal_for_training: first 10% for Keras validation
+    val_size = int(0.1 * len(X_normal_for_training))
+    X_val_ae = X_normal_for_training[:val_size]
+    X_tr_ae  = X_normal_for_training[val_size:]
+
+    print(f"[autoencoder-train] Split: "
+          f"{X_tr_ae.shape[0]:,} train  |  "
+          f"{X_val_ae.shape[0]:,} Keras-val  |  "
+          f"{X_val_normal.shape[0]:,} threshold-val")
 
     # Build and compile
     autoencoder, encoder = build_autoencoder(
@@ -189,13 +207,18 @@ def main(args):
         verbose=1
     )
 
-    # ── 3. Compute threshold on NORMAL-TEST traffic (95th percentile) ─────
-    # FPR on normal is ~5% by construction here; the honest separation
-    # evidence is recall on attacks and the histogram overlap.
-    X_normal_test = X_test[y_test == 0]
-    threshold = compute_threshold(autoencoder, X_normal_test, percentile=95)
-    print(f"[autoencoder-train] Anomaly threshold (95th pct, normal-test): "
+    # ── 3. Compute threshold on NORMAL-VALIDATION data (not test set) ─────
+    # Using the last 15% of normal train samples reserved above.
+    # This prevents data leakage: the threshold calibration set and the
+    # evaluation test set are fully disjoint.
+    threshold = compute_threshold(autoencoder, X_val_normal, percentile=95)
+    print(f"[autoencoder-train] Anomaly threshold (95th pct, normal-validation): "
           f"{threshold:.6f}")
+    print(f"[autoencoder-train] NOTE: threshold calibrated on validation data "
+          f"(not test data) — no data leakage")
+
+    # X_normal_test is kept for counting normal test samples in results only
+    X_normal_test = X_test[y_test == 0]
 
     # ── 4. Save models (.keras primary + .h5 project convention) ──────────
     autoencoder.save(os.path.join(args.out, 'autoencoder_model.keras'))
@@ -234,7 +257,7 @@ def main(args):
         'final_val_loss':         round(final_val_loss, 6),
         'epochs_trained':         epochs_trained,
         'threshold_95pct':        round(threshold, 6),
-        'threshold_source':       'normal_test_95th_percentile',
+        'threshold_source':       'normal_train_validation_95th_percentile',
         'mean_normal_test_error': ae_results['mean_normal_error'],
         'mean_attack_test_error': ae_results['mean_attack_error'],
         'recall_on_attacks':      ae_results['recall'],
@@ -243,6 +266,7 @@ def main(args):
         'precision':              ae_results['precision'],
         'f1_score':               ae_results['f1_score'],
         'normal_train_samples':   int(X_normal.shape[0]),
+        'val_normal_samples':     int(X_val_normal.shape[0]),
         'normal_test_samples':    int(X_normal_test.shape[0]),
         'attack_test_samples':    int(X_test[y_test > 0].shape[0]),
         'input_dim':              int(X_normal.shape[1]),
@@ -257,14 +281,15 @@ def main(args):
     print("\n" + "=" * 60)
     print("  TRAINING SUMMARY")
     print("=" * 60)
-    print(f"  Final train loss (MSE)  : {final_train_loss:.6f}")
-    print(f"  Final val loss   (MSE)   : {final_val_loss:.6f}")
-    print(f"  Epochs trained           : {epochs_trained}")
-    print(f"  95th-pct threshold       : {threshold:.6f}")
-    print(f"  Recall on attacks         : {ae_results['recall']}")
-    print(f"  FPR on normal             : {ae_results['false_positive_rate']}")
-    print(f"  Mean error (normal test)  : {ae_results['mean_normal_error']}")
-    print(f"  Mean error (attack test)  : {ae_results['mean_attack_error']}")
+    print(f"  Final train loss (MSE)        : {final_train_loss:.6f}")
+    print(f"  Final val loss   (MSE)         : {final_val_loss:.6f}")
+    print(f"  Epochs trained                 : {epochs_trained}")
+    print(f"  95th-pct threshold             : {threshold:.6f}")
+    print(f"  Threshold source               : normal-validation (not test data)")
+    print(f"  Recall on attacks              : {ae_results['recall']}")
+    print(f"  FPR on normal                  : {ae_results['false_positive_rate']}")
+    print(f"  Mean error (normal-validation) : {ae_results['mean_normal_error']}")
+    print(f"  Mean error (attack test)       : {ae_results['mean_attack_error']}")
     print("=" * 60)
 
     return autoencoder, encoder, threshold, results

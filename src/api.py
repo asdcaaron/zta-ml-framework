@@ -40,6 +40,7 @@ from flask_cors import CORS
 
 from preprocess import preprocess_single_sample, FEATURE_COLS
 from model import score_to_risk, CLASS_NAMES
+from autoencoder import load_autoencoder, predict_anomaly
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -56,22 +57,44 @@ CORS(app)
 MODEL_PATH      = os.getenv('MODEL_PATH',      'data/cnn_gru_model.keras')
 ARTIFACTS_DIR   = os.getenv('ARTIFACTS_DIR',   'data')
 RISK_THRESHOLD  = float(os.getenv('RISK_THRESHOLD', '0.5'))
+AE_MODEL_PATH   = os.path.join(ARTIFACTS_DIR, 'autoencoder_model.keras')
 
 model = None
 model_load_time = None
 
+ae_model = None
+ae_threshold = None
+ae_model_load_time = None
+
+
 def load_model():
     global model, model_load_time
+    global ae_model, ae_threshold, ae_model_load_time
+
+    # ── Load CNN-GRU ──────────────────────────────────────────────────────
     if not os.path.exists(MODEL_PATH):
         log.warning(f"Model file not found at '{MODEL_PATH}'. "
                     "Run src/train.py first.")
-        return
-    log.info(f"Loading model from '{MODEL_PATH}'...")
-    model = tf.keras.models.load_model(MODEL_PATH)
-    model_load_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-    log.info("Model loaded successfully.")
+    else:
+        log.info(f"Loading CNN-GRU model from '{MODEL_PATH}'...")
+        model = tf.keras.models.load_model(MODEL_PATH)
+        model_load_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        log.info("CNN-GRU model loaded successfully.")
 
-# Load model in a background thread so Flask starts immediately
+    # ── Load Autoencoder ──────────────────────────────────────────────────
+    try:
+        log.info(f"Loading autoencoder from '{AE_MODEL_PATH}'...")
+        autoencoder, encoder, threshold = load_autoencoder(ARTIFACTS_DIR)
+        ae_model = autoencoder
+        ae_threshold = float(threshold)
+        ae_model_load_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        log.info(f"Autoencoder loaded. Threshold: {ae_threshold:.6f}")
+    except FileNotFoundError as e:
+        log.warning(f"Autoencoder not found: {e}. "
+                    "Run src/train_autoencoder.py first.")
+
+
+# Load models in a background thread so Flask starts immediately
 import threading
 threading.Thread(target=load_model, daemon=True).start()
 
@@ -90,17 +113,61 @@ def _validate_features(data: dict) -> dict:
 
 
 def _run_inference(sample: np.ndarray) -> dict:
-    """Run model inference and return scored result."""
+    """
+    Run dual-model inference (CNN-GRU + Autoencoder) and return scored result.
+
+    # NOTE: This API returns policy decision labels. Actual network enforcement
+    # (firewall rules, session termination, MFA triggers) requires integration
+    # with an enforcement plane (e.g., firewall API, ZTNA controller). This
+    # prototype demonstrates the decision layer only.
+    """
     if model is None:
-        abort(503, description="Model not loaded. Run train.py first.")
+        abort(503, description="CNN-GRU model not loaded. Run train.py first.")
+    if ae_model is None:
+        abort(503, description="Autoencoder not loaded. Run train_autoencoder.py first.")
+
     t0 = time.perf_counter()
-    probs = model.predict(sample, verbose=0)[0].tolist()
+
+    # ── CNN-GRU inference ─────────────────────────────────────────────────
+    probs = model.predict(sample, verbose=0)[0]          # shape (5,)
+    cnn_risk = float(1.0 - probs[0])                     # 1 - P(Normal)
+
+    # ── Autoencoder inference ─────────────────────────────────────────────
+    # Flatten sample from (1, 40, 1) to (1, 40) for the autoencoder
+    flat_sample = sample.reshape(1, -1)                  # (1, 40)
+    errors, is_anomaly, risk_scores = predict_anomaly(
+        ae_model, flat_sample, ae_threshold
+    )
+    ae_reconstruction_error = float(errors[0])
+    ae_is_anomaly = bool(is_anomaly[0])
+    ae_risk = float(risk_scores[0])
+
+    # ── Fuse: take the more conservative (higher) risk score ─────────────
+    combined_risk = float(max(cnn_risk, ae_risk))
+
     latency_ms = round((time.perf_counter() - t0) * 1000, 2)
-    result = score_to_risk(probs)
-    result['latency_ms'] = latency_ms
-    result['probabilities'] = {CLASS_NAMES[i]: round(p, 4)
-                               for i, p in enumerate(probs)}
-    return result
+
+    # score_to_risk uses the CNN-GRU probs to derive action/classification
+    result = score_to_risk(probs.tolist())
+
+    return {
+        # Backward-compatible field (combined risk for policy decisions)
+        'risk_score':             combined_risk,
+        'classification':         result['classification'],
+        'confidence':             result['confidence'],
+        'action':                 result['action'],
+        'latency_ms':             latency_ms,
+        'probabilities':          {CLASS_NAMES[i]: round(float(p), 4)
+                                   for i, p in enumerate(probs)},
+        # Dual-model detail fields
+        'cnn_risk':               round(cnn_risk, 6),
+        'ae_risk':                round(ae_risk, 6),
+        'combined_risk':          round(combined_risk, 6),
+        'ae_reconstruction_error': round(ae_reconstruction_error, 8),
+        'ae_is_anomaly':          ae_is_anomaly,
+        # ZTA alias for action — explicit field for policy engine consumers
+        'zta_decision':           result['action'],
+    }
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -109,7 +176,9 @@ def _run_inference(sample: np.ndarray) -> dict:
 def dashboard():
     """Browser-friendly dashboard showing API status and endpoints."""
     model_status = "Loaded" if model is not None else "NOT LOADED"
-    color = "#2ecc71" if model is not None else "#e74c3c"
+    ae_status    = "Loaded" if ae_model is not None else "NOT LOADED"
+    color     = "#2ecc71" if model is not None else "#e74c3c"
+    ae_color  = "#2ecc71" if ae_model is not None else "#e74c3c"
     return f"""
     <!DOCTYPE html>
     <html>
@@ -124,6 +193,9 @@ def dashboard():
             .badge {{ display: inline-block; padding: 4px 12px;
                      border-radius: 12px; color: white;
                      background: {color}; font-weight: bold; }}
+            .ae-badge {{ display: inline-block; padding: 4px 12px;
+                        border-radius: 12px; color: white;
+                        background: {ae_color}; font-weight: bold; }}
             table {{ border-collapse: collapse; width: 100%;
                     background: white; border-radius: 8px;
                     box-shadow: 0 2px 6px rgba(0,0,0,0.1); }}
@@ -145,12 +217,17 @@ def dashboard():
            Systems, Infrastructure &amp; Cybersecurity</p>
 
         <div class="box">
-            <strong>Model Status:</strong>
+            <strong>CNN-GRU Status:</strong>
             <span class="badge">{model_status}</span>
             &nbsp;&nbsp;
             <strong>Loaded at:</strong> {model_load_time or 'N/A'}
+            <br><br>
+            <strong>Autoencoder Status:</strong>
+            <span class="ae-badge">{ae_status}</span>
             &nbsp;&nbsp;
-            <strong>Input:</strong> (41, 1) NSL-KDD features
+            <strong>Loaded at:</strong> {ae_model_load_time or 'N/A'}
+            <br><br>
+            <strong>Input:</strong> (40, 1) NSL-KDD features
             &nbsp;&nbsp;
             <strong>Classes:</strong> Normal, DoS, Probe, R2L, U2R
         </div>
@@ -207,9 +284,10 @@ Invoke-RestMethod -Uri http://127.0.0.1:5000/predict `
 def health():
     """Liveness check for load balancers / k8s probes."""
     return jsonify({
-        'status':       'ok',
-        'model_loaded': model is not None,
-        'timestamp':    time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        'status':          'ok',
+        'model_loaded':    model is not None,
+        'ae_model_loaded': ae_model is not None,
+        'timestamp':       time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     })
 
 
@@ -217,20 +295,28 @@ def health():
 def model_info():
     """Return metadata about the currently loaded model."""
     if model is None:
-        return jsonify({'error': 'No model loaded'}), 503
+        return jsonify({'error': 'No CNN-GRU model loaded'}), 503
     return jsonify({
-        'model_path':      MODEL_PATH,
-        'loaded_at':       model_load_time,
-        'input_shape':     str(model.input_shape),
-        'output_classes':  CLASS_NAMES,
-        'risk_threshold':  RISK_THRESHOLD,
+        'model_path':        MODEL_PATH,
+        'loaded_at':         model_load_time,
+        'input_shape':       str(model.input_shape),
+        'output_classes':    CLASS_NAMES,
+        'risk_threshold':    RISK_THRESHOLD,
+        'ae_model_path':     AE_MODEL_PATH,
+        'ae_loaded_at':      ae_model_load_time,
+        'ae_threshold':      ae_threshold,
     })
 
 
 @app.route('/predict', methods=['POST'])
 def predict():
     """
-    Score a single traffic connection.
+    Score a single traffic connection using the dual-model pipeline.
+
+    # NOTE: This API returns policy decision labels. Actual network enforcement
+    # (firewall rules, session termination, MFA triggers) requires integration
+    # with an enforcement plane (e.g., firewall API, ZTNA controller). This
+    # prototype demonstrates the decision layer only.
 
     Request body (JSON):
     {
@@ -241,18 +327,24 @@ def predict():
             "flag": "SF",
             "src_bytes": 232,
             "dst_bytes": 8153,
-            ... (any of the 41 NSL-KDD features)
+            ... (any of the 40 NSL-KDD features)
         }
     }
 
     Response:
     {
-        "risk_score": 0.12,
+        "risk_score": 0.12,          // combined risk (max of cnn_risk, ae_risk)
         "classification": "Normal",
         "confidence": 0.88,
         "action": "ALLOW",
         "latency_ms": 3.4,
-        "probabilities": { "Normal": 0.88, "DoS": 0.05, ... }
+        "probabilities": { "Normal": 0.88, "DoS": 0.05, ... },
+        "cnn_risk": 0.12,
+        "ae_risk": 0.05,
+        "combined_risk": 0.12,
+        "ae_reconstruction_error": 0.00123456,
+        "ae_is_anomaly": false,
+        "zta_decision": "ALLOW"
     }
     """
     data = request.get_json(force=True, silent=True)
@@ -265,6 +357,8 @@ def predict():
 
     log.info(f"[/predict] action={result['action']}  "
              f"risk={result['risk_score']}  "
+             f"cnn_risk={result['cnn_risk']}  "
+             f"ae_risk={result['ae_risk']}  "
              f"class={result['classification']}  "
              f"latency={result['latency_ms']}ms")
 
@@ -274,7 +368,7 @@ def predict():
 @app.route('/predict/batch', methods=['POST'])
 def predict_batch():
     """
-    Score a batch of traffic connections.
+    Score a batch of traffic connections using the dual-model pipeline.
 
     Request body (JSON):
     {
@@ -315,12 +409,12 @@ def predict_batch():
             action_counts.get(result['action'], 0) + 1
 
     return jsonify({
-        'results':   results,
-        'total':     len(results),
-        'blocked':   action_counts['BLOCK'],
+        'results':    results,
+        'total':      len(results),
+        'blocked':    action_counts['BLOCK'],
         'challenged': action_counts['CHALLENGE_MFA'],
-        'monitored': action_counts['MONITOR'],
-        'allowed':   action_counts['ALLOW'],
+        'monitored':  action_counts['MONITOR'],
+        'allowed':    action_counts['ALLOW'],
     }), 200
 
 
