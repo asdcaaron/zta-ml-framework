@@ -253,16 +253,29 @@ MILESTONES = [
         "status": "done",
     },
     {
-        "date": "Pending",
+        "date": "28 Nov 2026",
         "phase": "Week 5 — Finalisation",
         "title": "Finalise results, write evaluation chapter, draft poster",
         "description": (
-            "Consolidate all results. Write the evaluation chapter for the final report. "
-            "Draft the research poster with all figures."
+            "Consolidated all results from Weeks 1–4. Wrote the full evaluation chapter "
+            "as a formatted multi-page PDF (8 sections: introduction, dataset, system "
+            "implementations, comparative results, threshold sensitivity, zero-day "
+            "capability, discussion, conclusion). Drafted the A3-landscape research poster "
+            "with a 3-column layout covering all key results, architecture pipeline, and "
+            "zero-day recall figures. All documents match the project's existing PDF style "
+            "(BLUE=#003087, GOLD=#C8A84B, Helvetica fonts, consistent table/border patterns)."
         ),
-        "evidence": "Not started",
-        "results": None,
-        "status": "pending",
+        "evidence": (
+            "generate_evaluation_chapter.py  |  data/Evaluation_Chapter_Okado_Aaron_Obbo.pdf  "
+            "|  generate_poster.py  |  data/Research_Poster_Okado_Aaron_Obbo.pdf"
+        ),
+        "results": (
+            "Evaluation chapter: 8 sections, multi-page A4 PDF, all figures embedded  "
+            "|  Research poster: A3 landscape, 3-column layout, 4-way comparison table, "
+            "zero-day recall, threshold sensitivity  "
+            "|  Progress PDF regenerated with Week 5 status = done"
+        ),
+        "status": "done",
     },
     {
         "date": "Pending",
@@ -524,7 +537,7 @@ def generate():
         ['Completed', str(done)],
         ['In progress', str(inprog)],
         ['Pending', str(pend)],
-        ['Current phase', 'Week 4 complete — Week 5 (finalisation + evaluation chapter) next'],
+        ['Current phase', 'Week 5 complete — Week 6 (prototype completion, demo, submission) next'],
     ]
     st = Table(summary, [CW * 0.5, CW * 0.5])
     st.setStyle(TableStyle([
