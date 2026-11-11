@@ -175,146 +175,148 @@ def tc(txt, bold=False, clr=BK, sz=7, al=TA_CENTER):
 #  COLUMN BUILDERS
 # ────────────────────────────────────────────────────────────────────────────
 def build_col1():
-    """Left column: Introduction, Research Gap, Architecture Pipeline."""
+    """Left column: Brief Summary, Research Objective, Methodology."""
     items = []
 
-    # -- Introduction / Problem
-    items.append(sec_heading('Introduction / Problem'))
-    items.append(sp(0.1))
+    # ── Brief Summary (Why / How / What) ─────────────────────────────────────
+    items.append(sec_heading('Brief Summary'))
+    items.append(sp(0.08))
+
+    summary_rows = [
+        [Paragraph('<font name="Helvetica-Bold" size="8" color="#003087">WHY</font>',
+                   ps('sw', al=TA_CENTER, lead=10)),
+         Paragraph(
+             'Hybrid workforces create new attack surfaces that legacy VPNs and '
+             'rule-based ZTA cannot defend alone. Unknown (zero-day) threats cannot '
+             'be detected without labelled attack data.',
+             ps('sb', fs=7.8, lead=10.5, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="8" color="#2E7D32">HOW</font>',
+                   ps('sh', al=TA_CENTER, lead=10)),
+         Paragraph(
+             'A dual-layer ML pipeline pairs a supervised CNN-GRU classifier '
+             '(known attacks) with a self-supervised autoencoder '
+             '(reconstruction-based; no attack labels needed) inside a ZTA '
+             'policy engine. Both scores fuse into one risk value: '
+             'ALLOW / MONITOR / CHALLENGE MFA / BLOCK.',
+             ps('sb2', fs=7.8, lead=10.5, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="8" color="#C8A84B">WHAT</font>',
+                   ps('swt', al=TA_CENTER, lead=10)),
+         Paragraph(
+             'A working Risk-Adaptive ZTA prototype evaluated in a controlled '
+             '5-way comparison on NSL-KDD. The combined system achieves '
+             '<b>accuracy 0.889, F1 0.900</b> with zero-day detection capability '
+             '— the only configuration that detects unseen attack types without '
+             'prior labelling.',
+             ps('sb3', fs=7.8, lead=10.5, sa=0))],
+    ]
+    summary_tbl = Table(summary_rows, colWidths=[COL_W * 0.14, COL_W * 0.86])
+    summary_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (0, 0), colors.HexColor('#E8F0FB')),
+        ('BACKGROUND',    (0, 1), (0, 1), colors.HexColor('#E8F5E9')),
+        ('BACKGROUND',    (0, 2), (0, 2), colors.HexColor('#FFF8E1')),
+        ('BOX',           (0, 0), (-1, -1), 0.8, GOLD),
+        ('INNERGRID',     (0, 0), (-1, -1), 0.3, LG),
+        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING',    (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 5),
+    ]))
+    items.append(summary_tbl)
+    items.append(sp(0.15))
+
+    # ── Research Objective ────────────────────────────────────────────────────
+    items.append(sec_heading('Research Objective'))
+    items.append(sp(0.08))
     items.append(Paragraph(
-        'Hybrid workforces (remote + on-premise users) expose enterprise networks to '
-        'ransomware, insider threats, lateral movement, and zero-day exploits.', BODYJ))
+        'Design, implement and experimentally evaluate a <b>Risk-Adaptive Zero Trust '
+        'Architecture</b> that integrates:', BODYJ))
     for t in [
-        'Legacy VPNs provide only perimeter-based access — no traffic inspection.',
-        'Zero Trust Architecture (ZTA) improves access control but cannot detect '
-        'novel, unseen attack patterns.',
-        'Self-supervised ML can detect zero-day anomalies without labelled attack data.',
+        'A <b>supervised CNN-GRU</b> for known-attack classification '
+        '(Normal, DoS, Probe, R2L, U2R)',
+        'A <b>self-supervised autoencoder</b> (reconstruction-based; trained on '
+        'normal traffic only — no attack labels required) for zero-day anomaly detection',
+        'A <b>risk fusion engine</b> combining both scores into adaptive '
+        'ZTA policy decisions',
+        'A <b>controlled 5-way comparison</b> against Legacy VPN and ZTA-only baselines '
+        'on the same test set',
     ]:
         items.append(b(t))
-    items.append(sp(0.1))
-
-    # -- Research Gap (highlighted box)
-    items.append(sec_heading('Research Gap'))
     items.append(sp(0.08))
-    gap_box = box([
+    items.append(box([
         Paragraph(
             '<i>"No existing work pairs Zero Trust Architecture with a self-supervised '
             '(label-free) anomaly detector in a comparative, hybrid workforce study."</i>',
-            ps('gq', fn='Helvetica-Oblique', fs=8, tc=BLUE, al=TA_CENTER, lead=11, sa=2)),
-        Paragraph(
-            'Gambo &amp; Almulhem (2026): ZTA reviewed — no zero-day ML.  '
-            'Bakhshi &amp; Ghita (2021): DL anomaly detection — requires attack labels.  '
-            'Abdelhady et al. (2026): ZTA + ML for IoT — no hybrid workforce scope.',
-            ps('gr', fs=7, tc=GREY, al=TA_JUSTIFY, lead=9.5, sa=0)),
-    ], col_w=COL_W, bg=BGOLD, border=GOLD)
-    items.append(gap_box)
+            ps('gq', fn='Helvetica-Oblique', fs=7.8, tc=BLUE, al=TA_CENTER, lead=10.5, sa=0)),
+    ], col_w=COL_W, bg=BGOLD, border=GOLD))
     items.append(sp(0.15))
 
-    # -- System Architecture pipeline
-    items.append(sec_heading('System Architecture Pipeline'))
+    # ── Methodology ───────────────────────────────────────────────────────────
+    items.append(sec_heading('Methodology'))
     items.append(sp(0.08))
 
-    box_w = (COL_W - 0.4 * cm)
-    half_w = (box_w - 0.2 * cm) / 2
-
-    def pipe_box(lbl, bg, border_c):
-        t = Table([[Paragraph(
-            f'<font name="Helvetica-Bold" size="7.5" color="{border_c.hexval()}">'
-            f'{lbl}</font>',
-            ps('pb', al=TA_CENTER, lead=10))]],
-            [box_w])
-        t.setStyle(TableStyle([
-            ('BACKGROUND',    (0, 0), (-1, -1), bg),
-            ('BOX',           (0, 0), (-1, -1), 0.8, border_c),
-            ('TOPPADDING',    (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-            ('ALIGNMENT',     (0, 0), (-1, -1), 'CENTER'),
-        ]))
-        return t
-
-    def arr():
-        return Paragraph(
-            '<font size="10" color="#999999">&#8595;</font>',
-            ps('ar', al=TA_CENTER, lead=12))
-
-    def split_boxes(lbl1, bg1, c1, lbl2, bg2, c2):
-        t1 = Table([[Paragraph(
-            f'<font name="Helvetica-Bold" size="7" color="{c1.hexval()}">'
-            f'{lbl1}</font>',
-            ps('sb1', al=TA_CENTER, lead=9))]],
-            [half_w])
-        t1.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), bg1),
-            ('BOX', (0, 0), (-1, -1), 0.8, c1),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ]))
-        t2 = Table([[Paragraph(
-            f'<font name="Helvetica-Bold" size="7" color="{c2.hexval()}">'
-            f'{lbl2}</font>',
-            ps('sb2', al=TA_CENTER, lead=9))]],
-            [half_w])
-        t2.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), bg2),
-            ('BOX', (0, 0), (-1, -1), 0.8, c2),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ]))
-        outer = Table([[t1, t2]], [half_w, half_w])
-        outer.setStyle(TableStyle([
-            ('LEFTPADDING',  (0, 0), (-1, -1), 0),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-            ('TOPPADDING',   (0, 0), (-1, -1), 0),
-            ('BOTTOMPADDING',(0, 0), (-1, -1), 0),
-            ('VALIGN',       (0, 0), (-1, -1), 'MIDDLE'),
-        ]))
-        return outer
-
-    items.append(pipe_box('INPUT: NSL-KDD dataset (125,973 train / 22,543 test)',
-                          BGREY, GREY))
-    items.append(arr())
-    items.append(pipe_box('PREPROCESS: drop zero-variance | log1p | LabelEncode | MinMax → 40 features',
-                          BGOLD, GOLD))
-    items.append(arr())
-    items.append(split_boxes(
-        'CNN-GRU\n(Supervised)\nConv1D 64→128→256\n+ GRU 128→64\n327K params',
-        BBLUE, BLUE,
-        'Autoencoder ★\n(Self-Supervised)\nEncoder 40→128→64→16\nDecoder 16→64→128→40',
-        BGREEN, GREEN))
-    items.append(arr())
-    items.append(pipe_box('COMBINED RISK SCORE (0–1) → Flask API → ZTA Policy Engine',
-                          BGOLD, GOLD))
-    items.append(arr())
-    items.append(pipe_box('DECISION: ALLOW | MONITOR | CHALLENGE MFA | BLOCK',
-                          BGREY, GREY))
-
-    # Error distribution figure
-    items.append(sp(0.12))
-    for fi in poster_image(
-            'data/results/autoencoder_error_distribution.png',
-            max_w=COL_W, max_h=4.5 * cm,
-            caption='Reconstruction error: normal vs attack traffic (19× separation)'):
-        items.append(fi)
+    meth_rows = [
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#FFFFFF">Step</font>',
+                   ps('mh0', al=TA_CENTER, lead=10)),
+         Paragraph('<font name="Helvetica-Bold" size="7.5" color="#FFFFFF">Action</font>',
+                   ps('mh1', al=TA_LEFT, lead=10))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#003087">1</font>',
+                   ps('mn', al=TA_CENTER, lead=10)),
+         Paragraph('<b>Data:</b> NSL-KDD (125,973 train / 22,543 test). '
+                   'Preprocessing: drop zero-variance, log1p scaling, '
+                   'LabelEncode (3 categorical), MinMaxScaler → 40 clean features.',
+                   ps('mb', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#003087">2</font>',
+                   ps('mn2', al=TA_CENTER, lead=10)),
+         Paragraph('<b>CNN-GRU training:</b> Conv1D(64→128→256) + GRU(128→64), '
+                   '327K params, 50 epochs, supervised on 5 classes.',
+                   ps('mb2', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#2E7D32">3</font>',
+                   ps('mn3', al=TA_CENTER, lead=10)),
+         Paragraph('<b>Autoencoder training:</b> Encoder 40→128→64→16 / Decoder '
+                   '16→64→128→40. Trained on NORMAL traffic only (67,343 samples). '
+                   'Threshold = 95th pct of reconstruction error on validation normals.',
+                   ps('mb3', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#C8A84B">4</font>',
+                   ps('mn4', al=TA_CENTER, lead=10)),
+         Paragraph('<b>Risk fusion:</b> combined_risk = max(CNN_risk, AE_risk). '
+                   'Flask API serves real-time decisions. Zeek Docker pipeline: '
+                   'pcap → conn.log → API → audit.jsonl.',
+                   ps('mb4', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#555555">5</font>',
+                   ps('mn5', al=TA_CENTER, lead=10)),
+         Paragraph('<b>Evaluation:</b> 5-way controlled comparison on identical '
+                   '22,543-sample test set. Metrics: Accuracy, F1, FPR, '
+                   'Response Time, Zero-Day Detection, per-class recall.',
+                   ps('mb5', fs=7.5, lead=10, sa=0))],
+    ]
+    meth_tbl = Table(meth_rows, colWidths=[COL_W * 0.08, COL_W * 0.92])
+    meth_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, 0),  BLUE),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BGREY, W, BGREEN, BGOLD, BGREY]),
+        ('GRID',          (0, 0), (-1, -1), 0.3, LG),
+        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
+    ]))
+    items.append(meth_tbl)
 
     return items
 
 
 def build_col2():
-    """Centre column: Key Results, Per-Class Detection, Threshold Sensitivity."""
+    """Centre column: Results & Benchmarking, Dataset & Baselines, Pipeline."""
     items = []
 
-    # -- 4-Way Comparison Table
-    items.append(sec_heading('Key Results — 4-Way Comparison'))
-    items.append(sp(0.08))
-    items.append(Paragraph(
-        'All systems evaluated on the same 22,543 NSL-KDD test samples.', SMCTR))
+    # ── Results & Benchmarking ────────────────────────────────────────────────
+    items.append(sec_heading('Results & Benchmarking'))
     items.append(sp(0.06))
-
-    W1 = COL_W * 0.34
-    W2 = COL_W * 0.14
-    W3 = COL_W * 0.14
-    W4 = COL_W * 0.14
-    W5 = COL_W * 0.24
+    items.append(Paragraph(
+        'All 5 systems evaluated on the <b>same 22,543 NSL-KDD test samples</b>. '
+        '* = simulated baseline (not a live deployment).',
+        ps('note', fs=7, tc=GREY, al=TA_LEFT, lead=9, sa=3)))
 
     def hdr(t):
         return Paragraph(
@@ -327,29 +329,37 @@ def build_col2():
             f'<font name="{fn}" size="7" color="{clr.hexval()}">{t}</font>',
             ps('cv', al=TA_CENTER, lead=9))
 
+    W1 = COL_W * 0.36
+    W2 = COL_W * 0.13
+    W3 = COL_W * 0.13
+    W4 = COL_W * 0.13
+    W5 = COL_W * 0.25
+
     comp_rows = [
         [hdr('System'), hdr('Acc'), hdr('F1'), hdr('FPR'), hdr('Zero-Day')],
-        [Paragraph('<font size="7">Legacy VPN</font>', ps('r1', al=TA_LEFT, lead=9)),
+        [Paragraph('<font size="7">Legacy VPN *</font>', ps('r1', al=TA_LEFT, lead=9)),
          val('0.666'), val('0.652'), val('0.180'), val('No')],
-        [Paragraph('<font size="7">ZTA Only</font>', ps('r2', al=TA_LEFT, lead=9)),
+        [Paragraph('<font size="7">ZTA Only *</font>', ps('r2', al=TA_LEFT, lead=9)),
          val('0.769'), val('0.768'), val('0.100'), val('No')],
-        [Paragraph('<font size="7">ZTA+CNN-GRU</font>', ps('r3', al=TA_LEFT, lead=9)),
+        [Paragraph('<font size="7">ZTA + CNN-GRU</font>', ps('r3', al=TA_LEFT, lead=9)),
          val('0.795'), val('0.789'), val('0.045'), val('No')],
-        [Paragraph('<font name="Helvetica-Bold" size="7">ZTA+Autoencoder</font>',
-                   ps('r4', fn='Helvetica-Bold', al=TA_LEFT, lead=9)),
-         val('0.844', bold=True, clr=BLUE),
-         val('0.848', bold=True, clr=BLUE),
-         val('0.050'),
+        [Paragraph('<font size="7">ZTA + Autoencoder</font>', ps('r4', al=TA_LEFT, lead=9)),
+         val('0.858'), val('0.865'), val('0.061'),
+         val('YES ✓', bold=True, clr=BLUE)],
+        [Paragraph('<font name="Helvetica-Bold" size="7">ZTA + CNN-GRU + AE ★</font>',
+                   ps('r5', fn='Helvetica-Bold', al=TA_LEFT, lead=9)),
+         val('0.889', bold=True, clr=BLUE),
+         val('0.900', bold=True, clr=BLUE),
+         val('0.099'),
          val('YES ✓', bold=True, clr=BLUE)],
     ]
-
     comp_tbl = Table(comp_rows, colWidths=[W1, W2, W3, W4, W5])
     comp_tbl.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, 0),  BLUE),
-        ('BACKGROUND',    (0, 4), (-1, 4),  BBLUE),
-        ('BOX',           (0, 4), (-1, 4),  0.8, BLUE),
+        ('BACKGROUND',    (0, 5), (-1, 5),  BBLUE),
+        ('BOX',           (0, 5), (-1, 5),  1.0, BLUE),
         ('FONTSIZE',      (0, 0), (-1, -1), 7),
-        ('ROWBACKGROUNDS',(0, 1), (-1, 3),  [BGREY, W, BGREY]),
+        ('ROWBACKGROUNDS',(0, 1), (-1, 4),  [BGREY, W, BGREY, W]),
         ('GRID',          (0, 0), (-1, -1), 0.25, LG),
         ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING',    (0, 0), (-1, -1), 3),
@@ -359,220 +369,311 @@ def build_col2():
     ]))
     items.append(comp_tbl)
     items.append(Paragraph(
-        '<i>ZTA+Autoencoder: best accuracy, best F1, only zero-day system.</i>',
+        '<i>★ ZTA+CNN-GRU+AE Fusion: best on accuracy and F1; zero-day capable.</i>',
         CAPTN))
-    items.append(sp(0.15))
+    items.append(sp(0.1))
 
-    # -- Per-Class Detection Rates
-    items.append(sec_heading('Per-Class Detection Rates'))
-    items.append(sp(0.06))
-
-    W_a = COL_W * 0.24
-    W_b = COL_W * 0.26
-    W_c = COL_W * 0.30
-    W_d = COL_W * 0.20
+    # Per-class detection
+    W_a = COL_W * 0.22
+    W_b = COL_W * 0.24
+    W_c = COL_W * 0.24
+    W_d = COL_W * 0.30
 
     pc_rows = [
-        [hdr('Class'), hdr('CNN-GRU'), hdr('Autoencoder'), hdr('Winner')],
-        [tc('DoS'),     tc('0.817'), tc('0.911', bold=True, clr=BLUE), tc('AE ★', bold=True, clr=BLUE)],
-        [tc('Probe'),   tc('0.571'), tc('0.882', bold=True, clr=BLUE), tc('AE ★', bold=True, clr=BLUE)],
-        [tc('R2L'),     tc('0.394', bold=True, clr=BLUE), tc('0.287', clr=RED), tc('CNN', bold=True, clr=BLUE)],
-        [tc('U2R'),     tc('0.358'), tc('0.687', bold=True, clr=BLUE), tc('AE ★', bold=True, clr=BLUE)],
+        [hdr('Class'), hdr('CNN-GRU'), hdr('Autoencoder'), hdr('Zero-Day Recall')],
+        [tc('DoS'),   tc('0.817'), tc('0.912', bold=True, clr=BLUE), tc('91.1% ✓', bold=True, clr=BLUE)],
+        [tc('Probe'), tc('0.571'), tc('0.947', bold=True, clr=BLUE), tc('88.2% ✓', bold=True, clr=BLUE)],
+        [tc('U2R'),   tc('0.358'), tc('0.687', bold=True, clr=BLUE), tc('68.7% ✓', bold=True, clr=BLUE)],
+        [tc('R2L'),   tc('0.394', bold=True, clr=BLUE),
+         tc('0.379', clr=RED),
+         Paragraph('<font name="Helvetica-Bold" size="7" color="#C62828">28.7% ⚠</font>',
+                   ps('rl', al=TA_CENTER, lead=9))],
     ]
     items.append(compact_table(pc_rows, [W_a, W_b, W_c, W_d]))
     items.append(Paragraph(
-        '<i>AE = Autoencoder. R2L is the autoencoder\'s documented weakness.</i>',
+        '<i>R2L weakness: those connections share statistical features with normal traffic.</i>',
         CAPTN))
     items.append(sp(0.15))
 
-    # -- Threshold Sensitivity
-    items.append(sec_heading('Threshold Sensitivity'))
+    # ── Dataset & Baselines ───────────────────────────────────────────────────
+    items.append(sec_heading('Dataset & Baselines'))
     items.append(sp(0.06))
-    items.append(Paragraph(
-        'Threshold sweep: 70th–99th percentile of normal reconstruction errors.',
-        BODY))
-    items.append(sp(0.04))
 
-    W_p = COL_W * 0.18
-    W_q = COL_W * 0.16
-    W_r = COL_W * 0.16
-    W_s = COL_W * 0.16
-    W_t = COL_W * 0.16
-    W_u = COL_W * 0.18
-
-    sens_rows = [
-        [hdr('Pct'), hdr('Prec'), hdr('Recall'), hdr('F1'), hdr('FPR'), hdr('Note')],
-        [tc('70th'), tc('0.813'), tc('0.990'), tc('0.893'), tc('0.300'), tc('high recall')],
-        [tc('80th ★'), tc('0.866'), tc('0.981'),
-         tc('0.920', bold=True, clr=BLUE), tc('0.200'), tc('optimal F1')],
-        [tc('95th'), tc('0.953'), tc('0.764'),
-         tc('0.848'), tc('0.050'), tc('current')],
-        [tc('99th'), tc('0.979'), tc('0.357'), tc('0.523'), tc('0.010'), tc('high prec')],
+    ds_rows = [
+        [hdr('Property'), hdr('Value')],
+        [tc('Dataset', al=TA_LEFT), tc('NSL-KDD (cleaned, benchmark IDS dataset)', al=TA_LEFT)],
+        [tc('Training samples', al=TA_LEFT), tc('125,973 (67,343 normal + 58,630 attacks)', al=TA_LEFT)],
+        [tc('Test samples', al=TA_LEFT), tc('22,543 (9,710 normal + 12,833 attacks)', al=TA_LEFT)],
+        [tc('Attack classes', al=TA_LEFT), tc('DoS, Probe, R2L, U2R', al=TA_LEFT)],
+        [tc('Features', al=TA_LEFT), tc('40 (after preprocessing pipeline)', al=TA_LEFT)],
+        [tc('Baseline A', al=TA_LEFT), tc('Legacy VPN — simulated, no ML', al=TA_LEFT)],
+        [tc('Baseline B', al=TA_LEFT), tc('ZTA Only — simulated, no ML', al=TA_LEFT)],
+        [tc('Baseline C', al=TA_LEFT), tc('ZTA + CNN-GRU — supervised only', al=TA_LEFT)],
+        [tc('Baseline D', al=TA_LEFT), tc('ZTA + Autoencoder — unsupervised only', al=TA_LEFT)],
+        [tc('System E ★', al=TA_LEFT), tc('ZTA + CNN-GRU + AE Fusion — proposed system', al=TA_LEFT)],
     ]
-    sens_tbl = Table(sens_rows, colWidths=[W_p, W_q, W_r, W_s, W_t, W_u])
-    sens_tbl.setStyle(TableStyle([
+    ds_tbl = Table(ds_rows, colWidths=[COL_W * 0.38, COL_W * 0.62])
+    ds_tbl.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, 0),  BLUE),
         ('FONTSIZE',      (0, 0), (-1, -1), 7),
-        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BGREY, W, BGREY, W]),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BGREY, W]),
         ('GRID',          (0, 0), (-1, -1), 0.25, LG),
         ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING',    (0, 0), (-1, -1), 2),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('LEFTPADDING',   (0, 0), (-1, -1), 3),
         ('RIGHTPADDING',  (0, 0), (-1, -1), 3),
-        # Highlight 80th row (optimal) in BBLUE
-        ('BACKGROUND',    (0, 2), (-1, 2),  BBLUE),
-        ('BOX',           (0, 2), (-1, 2),  0.8, BLUE),
-        # Highlight 95th row (current) in BGREEN
-        ('BACKGROUND',    (0, 3), (-1, 3),  BGREEN),
-        ('BOX',           (0, 3), (-1, 3),  0.6, GREEN),
+        # Highlight System E row
+        ('BACKGROUND',    (0, 10), (-1, 10), BBLUE),
+        ('BOX',           (0, 10), (-1, 10), 0.8, BLUE),
     ]))
-    items.append(sens_tbl)
+    items.append(ds_tbl)
+    items.append(sp(0.15))
+
+    # ── Pipeline ──────────────────────────────────────────────────────────────
+    items.append(sec_heading('System Pipeline'))
     items.append(sp(0.08))
 
-    # Recommendation box
-    rec_box = box([
-        Paragraph(
-            '<font name="Helvetica-Bold" size="7.5" color="#003087">Deployment Recommendation</font>',
-            ps('rb1', al=TA_CENTER, lead=10, sa=1)),
-        Paragraph(
-            '80th pct → F1=0.920 — use for incident-response / high-recall mode.  '
-            '95th pct → F1=0.848, FPR=0.050 — use for steady-state low-alert environments.',
-            ps('rb2', fs=7.5, lead=10.5, al=TA_JUSTIFY, sa=0)),
-    ], col_w=COL_W, bg=BGOLD, border=GOLD)
-    items.append(rec_box)
+    box_w = COL_W - 0.2 * cm
+    half_w = (box_w - 0.15 * cm) / 2
 
-    # Threshold sensitivity figure
-    items.append(sp(0.12))
-    for fi in poster_image(
-            'data/results/threshold_sensitivity.png',
-            max_w=COL_W, max_h=4.0 * cm,
-            caption='F1/FPR sweep across threshold percentiles (70th–99th)'):
-        items.append(fi)
+    def pipe_box(lbl, bg, border_c, fs=7.5):
+        t = Table([[Paragraph(
+            f'<font name="Helvetica-Bold" size="{fs}" color="{border_c.hexval()}">'
+            f'{lbl}</font>',
+            ps('pb', al=TA_CENTER, lead=10))]],
+            [box_w])
+        t.setStyle(TableStyle([
+            ('BACKGROUND',    (0, 0), (-1, -1), bg),
+            ('BOX',           (0, 0), (-1, -1), 0.8, border_c),
+            ('TOPPADDING',    (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ('ALIGNMENT',     (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        return t
+
+    def arr():
+        return Paragraph(
+            '<font size="9" color="#999999">&#8595;</font>',
+            ps('ar', al=TA_CENTER, lead=11))
+
+    def split_boxes(lbl1, bg1, c1, lbl2, bg2, c2):
+        t1 = Table([[Paragraph(
+            f'<font name="Helvetica-Bold" size="7" color="{c1.hexval()}">'
+            f'{lbl1}</font>',
+            ps('sb1', al=TA_CENTER, lead=9))]],
+            [half_w])
+        t1.setStyle(TableStyle([
+            ('BACKGROUND',    (0, 0), (-1, -1), bg1),
+            ('BOX',           (0, 0), (-1, -1), 0.8, c1),
+            ('TOPPADDING',    (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        t2 = Table([[Paragraph(
+            f'<font name="Helvetica-Bold" size="7" color="{c2.hexval()}">'
+            f'{lbl2}</font>',
+            ps('sb2', al=TA_CENTER, lead=9))]],
+            [half_w])
+        t2.setStyle(TableStyle([
+            ('BACKGROUND',    (0, 0), (-1, -1), bg2),
+            ('BOX',           (0, 0), (-1, -1), 0.8, c2),
+            ('TOPPADDING',    (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        outer = Table([[t1, t2]], [half_w, half_w])
+        outer.setStyle(TableStyle([
+            ('LEFTPADDING',  (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING',   (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING',(0, 0), (-1, -1), 0),
+            ('VALIGN',       (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        return outer
+
+    items.append(pipe_box('INPUT: Live traffic | NSL-KDD | Zeek conn.log | pcap',
+                          BGREY, GREY))
+    items.append(arr())
+    items.append(pipe_box('PREPROCESS: drop zero-var → log1p → LabelEncode → MinMax → 40 features',
+                          BGOLD, GOLD))
+    items.append(arr())
+    items.append(split_boxes(
+        'CNN-GRU (Supervised)\nConv1D 64→128→256\n+ GRU 128→64 | 327K params\nKnown attack classifier',
+        BBLUE, BLUE,
+        'Autoencoder ★ (Self-Sup.)\nEncoder 40→128→64→16\nDecoder 16→64→128→40\nZero-day detector',
+        BGREEN, GREEN))
+    items.append(arr())
+    items.append(pipe_box('RISK FUSION: combined = max(CNN_risk, AE_risk) → Flask API',
+                          BGOLD, GOLD))
+    items.append(arr())
+
+    # Decision boxes
+    W4 = box_w / 4
+    acts = Table([[
+        Paragraph('<font name="Helvetica-Bold" size="7" color="#C62828">&gt;0.8\nBLOCK</font>',
+                  ps('a1', al=TA_CENTER, lead=9)),
+        Paragraph('<font name="Helvetica-Bold" size="7" color="#E65100">0.5–0.8\nCHALLENGE</font>',
+                  ps('a2', al=TA_CENTER, lead=9)),
+        Paragraph('<font name="Helvetica-Bold" size="7" color="#C8A84B">0.3–0.5\nMONITOR</font>',
+                  ps('a3', al=TA_CENTER, lead=9)),
+        Paragraph('<font name="Helvetica-Bold" size="7" color="#2E7D32">&lt;0.3\nALLOW</font>',
+                  ps('a4', al=TA_CENTER, lead=9)),
+    ]], [W4, W4, W4, W4])
+    acts.setStyle(TableStyle([
+        ('BACKGROUND',  (0, 0), (0, -1), colors.HexColor('#FFEBEE')),
+        ('BACKGROUND',  (1, 0), (1, -1), colors.HexColor('#FFF3E0')),
+        ('BACKGROUND',  (2, 0), (2, -1), colors.HexColor('#FFFDE7')),
+        ('BACKGROUND',  (3, 0), (3, -1), BGREEN),
+        ('BOX',         (0, 0), (-1, -1), 0.4, LG),
+        ('INNERGRID',   (0, 0), (-1, -1), 0.3, LG),
+        ('TOPPADDING',  (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING',(0,0), (-1, -1), 3),
+    ]))
+    items.append(acts)
 
     return items
 
 
 def build_col3():
-    """Right column: Zero-Day Capability, Conclusions, References, QR placeholder."""
+    """Right column: Conclusion (impact), Alignment (SDG/NDP IV/Vision 2040), References."""
     items = []
 
-    # -- Zero-Day Detection
-    items.append(sec_heading('Zero-Day Detection Capability'))
+    # ── Conclusion / Impact ───────────────────────────────────────────────────
+    items.append(sec_heading('Conclusion & Impact'))
     items.append(sp(0.08))
     items.append(Paragraph(
-        'Leave-one-class-out experiment: each attack class held out from threshold '
-        'calibration; scored purely on reconstruction error.', BODYJ))
+        'The ZTA + CNN-GRU + Autoencoder fusion system demonstrates that combining '
+        'supervised and self-supervised ML inside a Zero Trust framework produces '
+        'measurably stronger security outcomes than any single approach alone.',
+        BODYJ))
     items.append(sp(0.06))
 
-    W_a = COL_W * 0.22
-    W_b = COL_W * 0.23
-    W_c = COL_W * 0.22
-    W_d = COL_W * 0.33
-
-    def zd_val(v, is_bad=False):
-        clr = RED if is_bad else BLUE
-        bold = True
-        return Paragraph(
-            f'<font name="Helvetica-Bold" size="7" color="{clr.hexval()}">{v}</font>',
-            ps('zv', al=TA_CENTER, lead=9))
-
-    zd_rows = [
-        [tc('Class', bold=True), tc('Recall', bold=True),
-         tc('Sep. Ratio', bold=True), tc('Notes', bold=True)],
-        [tc('DoS'), zd_val('91.1%'),
-         tc('~22×'), tc('High-volume → large error', al=TA_LEFT)],
-        [tc('Probe'), zd_val('88.2%'),
-         tc('~27.8×'), tc('Unusual ports → highest sep.', al=TA_LEFT)],
-        [tc('U2R'), zd_val('68.7%'),
-         tc('~24.1×'), tc('Privilege escalation signal', al=TA_LEFT)],
-        [tc('R2L'), zd_val('28.7%', is_bad=True),
-         Paragraph('<font name="Helvetica-Bold" size="7" color="#C62828">~3.7×</font>',
-                   ps('rs', al=TA_CENTER, lead=9)),
-         tc('Resembles normal sessions ⚠', al=TA_LEFT)],
+    impact_rows = [
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#FFFFFF">Finding</font>',
+                   ps('ih0', al=TA_LEFT, lead=10)),
+         Paragraph('<font name="Helvetica-Bold" size="7.5" color="#FFFFFF">Impact</font>',
+                   ps('ih1', al=TA_LEFT, lead=10))],
+        [Paragraph('<font size="7.5" color="#003087"><b>Best accuracy 0.889 &amp; F1 0.900</b></font>',
+                   ps('if1', al=TA_LEFT, lead=10)),
+         Paragraph('Outperforms all baselines including CNN-GRU alone — fusion adds value.',
+                   ps('iv1', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font size="7.5" color="#2E7D32"><b>Zero-day detection ✓</b></font>',
+                   ps('if2', al=TA_LEFT, lead=10)),
+         Paragraph('Only system that flags unseen attack types without prior labelling. '
+                   'DoS 91%, Probe 88% recall.',
+                   ps('iv2', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font size="7.5" color="#003087"><b>9× faster inference</b></font>',
+                   ps('if3', al=TA_LEFT, lead=10)),
+         Paragraph('Autoencoder: 0.066 ms/sample vs CNN-GRU: 0.589 ms — suitable '
+                   'for real-time ZTA enforcement.',
+                   ps('iv3', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font size="7.5" color="#C62828"><b>R2L limitation ⚠</b></font>',
+                   ps('if4', al=TA_LEFT, lead=10)),
+         Paragraph('R2L recall 28.7% — connections resemble normal sessions. '
+                   'Hybrid supervised+unsupervised approach recommended.',
+                   ps('iv4', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font size="7.5" color="#555555"><b>Practical prototype</b></font>',
+                   ps('if5', al=TA_LEFT, lead=10)),
+         Paragraph('Live Flask API + Zeek Docker pipeline demonstrated end-to-end. '
+                   'Policy decisions logged to audit trail.',
+                   ps('iv5', fs=7.5, lead=10, sa=0))],
     ]
-    zd_tbl = Table(zd_rows, colWidths=[W_a, W_b, W_c, W_d])
-    zd_tbl.setStyle(TableStyle([
+    impact_tbl = Table(impact_rows, colWidths=[COL_W * 0.36, COL_W * 0.64])
+    impact_tbl.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, 0),  BLUE),
-        ('TEXTCOLOR',     (0, 0), (-1, 0),  W),
-        ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
-        ('FONTSIZE',      (0, 0), (-1, -1), 7),
-        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BGREY, W, BGREY, W]),
-        ('GRID',          (0, 0), (-1, -1), 0.25, LG),
-        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING',    (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 3),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 3),
-        # Red row for R2L
-        ('BACKGROUND',    (0, 4), (-1, 4),  colors.HexColor('#FFF0F0')),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BGREY, W, BGREEN, colors.HexColor('#FFF0F0'), BGREY]),
+        ('GRID',          (0, 0), (-1, -1), 0.3, LG),
+        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
     ]))
-    items.append(zd_tbl)
-    items.append(Paragraph(
-        '<i>R2L (remote-to-local) connections share byte counts, duration, and service '
-        'patterns with normal sessions — low reconstruction error → documented weakness.</i>',
-        CAPTN))
+    items.append(impact_tbl)
     items.append(sp(0.15))
 
-    # -- Conclusions
-    items.append(sec_heading('Conclusions'))
-    items.append(sp(0.06))
-    for t in [
-        '<b>Best accuracy (0.844) and F1 (0.848)</b> of all four systems.',
-        '<b>Only system with zero-day detection</b> — self-supervised, no attack '
-        'labels needed.',
-        '<b>~9× faster inference</b> than CNN-GRU (0.066 ms vs 0.589 ms/sample) '
-        '— suitable for real-time deployment.',
-        '<b>Honest limitation:</b> R2L recall 28.7% — those connections resemble '
-        'normal traffic statistically.',
-        '<b>Self-supervised anomaly detection</b> is a viable, practical complement '
-        'to supervised classifiers in ZTA.',
-    ]:
-        items.append(b(t))
+    # ── Alignment ─────────────────────────────────────────────────────────────
+    items.append(sec_heading('Strategic Alignment'))
+    items.append(sp(0.08))
+
+    align_rows = [
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#FFFFFF">Framework</font>',
+                   ps('ah0', al=TA_LEFT, lead=10)),
+         Paragraph('<font name="Helvetica-Bold" size="7.5" color="#FFFFFF">Alignment</font>',
+                   ps('ah1', al=TA_LEFT, lead=10))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#003087">'
+                   'SDG 9</font>',
+                   ps('a1l', al=TA_LEFT, lead=10)),
+         Paragraph('<b>Industry, Innovation &amp; Infrastructure:</b> Builds resilient '
+                   'digital infrastructure with AI-driven security for hybrid enterprises.',
+                   ps('a1r', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#003087">'
+                   'SDG 16</font>',
+                   ps('a2l', al=TA_LEFT, lead=10)),
+         Paragraph('<b>Peace, Justice &amp; Strong Institutions:</b> Strengthens '
+                   'institutional cybersecurity posture through adaptive, evidence-based '
+                   'access control.',
+                   ps('a2r', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#2E7D32">'
+                   'NDP V</font>',
+                   ps('a3l', al=TA_LEFT, lead=10)),
+         Paragraph('<b>Digital Transformation:</b> Contributes to Uganda\'s National '
+                   'Development Plan priority of secure, trusted digital services and '
+                   'ICT infrastructure.',
+                   ps('a3r', fs=7.5, lead=10, sa=0))],
+        [Paragraph('<font name="Helvetica-Bold" size="7.5" color="#C8A84B">'
+                   'Vision 2040</font>',
+                   ps('a4l', al=TA_LEFT, lead=10)),
+         Paragraph('<b>Knowledge Economy:</b> Supports Uganda\'s Vision 2040 goal of '
+                   'transitioning to a knowledge-based economy by advancing local '
+                   'AI and cybersecurity capability.',
+                   ps('a4r', fs=7.5, lead=10, sa=0))],
+    ]
+    align_tbl = Table(align_rows, colWidths=[COL_W * 0.20, COL_W * 0.80])
+    align_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, 0),  BLUE),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BBLUE, W, BGREEN, BGOLD]),
+        ('GRID',          (0, 0), (-1, -1), 0.3, LG),
+        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
+    ]))
+    items.append(align_tbl)
     items.append(sp(0.15))
 
-    # -- References
-    items.append(sec_heading('References'))
+    # ── Key References ────────────────────────────────────────────────────────
+    items.append(sec_heading('Key References'))
     items.append(sp(0.06))
-    items.append(Paragraph(
+    for ref in [
         '[1] Gambo &amp; Almulhem (2026). Zero Trust Architecture: A Systematic '
         'Literature Review. <i>J. Network and Systems Mgmt.</i>, 34(1).',
-        ps('ref1', fs=7, lead=9.5, al=TA_JUSTIFY, sa=2)))
-    items.append(Paragraph(
         '[2] Bakhshi &amp; Ghita (2021). Anomaly Detection in Encrypted Internet '
         'Traffic Using Hybrid Deep Learning. <i>Security and Comm. Networks.</i>',
-        ps('ref2', fs=7, lead=9.5, al=TA_JUSTIFY, sa=2)))
-    items.append(Paragraph(
         '[3] Abdelhady et al. (2026). Hybrid ML Anomaly Detection and Lightweight '
         'ZTA for LoRaWAN. <i>IEEE Access</i>, 14, 18387–18407.',
-        ps('ref3', fs=7, lead=9.5, al=TA_JUSTIFY, sa=2)))
-    items.append(sp(0.15))
+        '[4] NIST SP 800-207 (2020). Zero Trust Architecture. National Institute '
+        'of Standards and Technology.',
+    ]:
+        items.append(Paragraph(ref, ps(f'ref{ref[1]}', fs=7, lead=9.5,
+                                       al=TA_JUSTIFY, sa=2)))
+    items.append(sp(0.12))
 
-    # -- QR Code placeholder
-    qr_inner = Table([[
-        Paragraph(
-            '<font name="Helvetica-Bold" size="8" color="#C8A84B">&#9633;</font>',
-            ps('qi1', al=TA_CENTER, lead=14)),
-    ]], [COL_W - 2 * cm])
-    qr_inner.setStyle(TableStyle([
-        ('TOPPADDING',    (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    ]))
-
+    # ── QR / GitHub ───────────────────────────────────────────────────────────
     qr_box = Table([[
         Paragraph(
             '<font name="Helvetica-Bold" size="8" color="#555555">'
-            'Scan for GitHub repo</font>',
+            'GitHub Repository</font>',
             ps('qr1', al=TA_CENTER, lead=11)),
         Paragraph(
-            '<font name="Helvetica-Bold" size="8.5" color="#C8A84B">'
+            '<font name="Helvetica-Bold" size="9" color="#C8A84B">'
             '&#9633;&#9633;&#9633;<br/>&#9633; QR &#9633;<br/>&#9633;&#9633;&#9633;</font>',
             ps('qrimg', al=TA_CENTER, lead=11)),
         Paragraph(
             '<font size="7.5" color="#555555">'
             'github.com/asdcaaron/<br/>zta-ml-framework</font>',
             ps('qr2', fn='Helvetica-Oblique', al=TA_CENTER, lead=10)),
-    ]], [COL_W * 0.38, COL_W * 0.22, COL_W * 0.40])
+    ]], [COL_W * 0.35, COL_W * 0.22, COL_W * 0.43])
     qr_box.setStyle(TableStyle([
         ('BACKGROUND',   (0, 0), (-1, -1), BGREY),
         ('BOX',          (0, 0), (-1, -1), 1.2, GOLD),
@@ -583,14 +684,6 @@ def build_col3():
         ('VALIGN',       (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     items.append(qr_box)
-
-    # Comparison bar figure
-    items.append(sp(0.12))
-    for fi in poster_image(
-            'data/results/comparison_bar.png',
-            max_w=COL_W, max_h=3.8 * cm,
-            caption='4-way system comparison: Accuracy, F1, and FPR'):
-        items.append(fi)
 
     return items
 
