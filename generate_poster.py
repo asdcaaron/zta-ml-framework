@@ -43,34 +43,36 @@ DARK_GOLD = colors.HexColor('#A07830')
 
 # ── Page setup (A3 landscape) ─────────────────────────────────────────────────
 PW, PH = landscape(A3)   # 420mm × 297mm  →  ~1190 × 842 pt
-LM = RM = 0.8 * cm
-TM = BM = 0.8 * cm
+LM = RM = 0.9 * cm
+TM = BM = 0.7 * cm
 CW = PW - LM - RM        # full content width
 
 # Column widths (3 equal columns with small gutters)
-GAP   = 0.35 * cm
+GAP   = 0.4 * cm
 NCOLS = 3
 COL_W = (CW - (NCOLS - 1) * GAP) / NCOLS
+# Inner usable width inside a column (accounting for cell padding)
+INNER_W = COL_W - 0.4 * cm
 
 
 # ── Style factory ─────────────────────────────────────────────────────────────
-def ps(name, fn='Helvetica', fs=8.5, tc=BK, al=TA_JUSTIFY,
-       lead=11, sb=0, sa=3, li=0, fi=0):
+def ps(name, fn='Helvetica', fs=7.5, tc=BK, al=TA_JUSTIFY,
+       lead=10, sb=0, sa=2, li=0, fi=0):
     return ParagraphStyle(name, fontName=fn, fontSize=fs, textColor=tc,
                           alignment=al, leading=lead, spaceBefore=sb,
                           spaceAfter=sa, leftIndent=li, firstLineIndent=fi)
 
-PTITLE  = ps('ptitle', 'Helvetica-Bold', 16, W, TA_CENTER, 20, sa=4)
-PSUB    = ps('psub',   'Helvetica-Bold', 9,  W, TA_CENTER, 12, sa=2)
-PAUTH   = ps('pauth',  'Helvetica',      8,  W, TA_CENTER, 11, sa=2)
-SEC     = ps('sec',    'Helvetica-Bold', 9.5, BLUE, TA_LEFT, 12, sb=2, sa=2)
-BODY    = ps('body',   fs=7.8, lead=10.5, sa=2)
-BODYJ   = ps('bodyj',  fs=7.8, lead=10.5, sa=2, al=TA_JUSTIFY)
-BULL    = ps('bull',   fs=7.5, lead=10, li=9, fi=-8, sa=1)
-SMCTR   = ps('smctr',  fs=7,   tc=GREY, al=TA_CENTER, lead=9, sa=2)
-BOLD_BL = ps('bbl',    'Helvetica-Bold', 8.5, BLUE, al=TA_CENTER, lead=11)
-BOLD_GR = ps('bgr',    'Helvetica-Bold', 8.5, GREEN, al=TA_CENTER, lead=11)
-CAPTN   = ps('captn',  fn='Helvetica-Oblique', fs=7, tc=GREY, al=TA_CENTER, lead=9, sa=2)
+PTITLE  = ps('ptitle', 'Helvetica-Bold', 15, W, TA_CENTER, 19, sa=3)
+PSUB    = ps('psub',   'Helvetica-Bold', 8.5, W, TA_CENTER, 11, sa=2)
+PAUTH   = ps('pauth',  'Helvetica',      8,   W, TA_CENTER, 10, sa=2)
+SEC     = ps('sec',    'Helvetica-Bold', 8.5, BLUE, TA_LEFT, 11, sb=2, sa=2)
+BODY    = ps('body',   fs=7.2, lead=9.8, sa=2)
+BODYJ   = ps('bodyj',  fs=7.2, lead=9.8, sa=2, al=TA_JUSTIFY)
+BULL    = ps('bull',   fs=7.0, lead=9.5, li=8, fi=-7, sa=1)
+SMCTR   = ps('smctr',  fs=6.8, tc=GREY, al=TA_CENTER, lead=8.5, sa=2)
+BOLD_BL = ps('bbl',    'Helvetica-Bold', 8.0, BLUE, al=TA_CENTER, lead=10)
+BOLD_GR = ps('bgr',    'Helvetica-Bold', 8.0, GREEN, al=TA_CENTER, lead=10)
+CAPTN   = ps('captn',  fn='Helvetica-Oblique', fs=6.5, tc=GREY, al=TA_CENTER, lead=8.5, sa=2)
 
 def sp(h=0.15): return Spacer(1, h * cm)
 def hr(c=GOLD, t=0.7, w='100%'):
@@ -107,26 +109,27 @@ def poster_image(path, max_w, max_h, caption=''):
 def sec_heading(title, col_w=None):
     """BLUE background section heading with GOLD underline border."""
     if col_w is None:
-        col_w = COL_W
+        col_w = INNER_W
     t = Table([[Paragraph(
-        f'<font name="Helvetica-Bold" size="9" color="#FFFFFF">{title}</font>',
-        ps('h', al=TA_LEFT, lead=11))]],
+        f'<font name="Helvetica-Bold" size="8.5" color="#FFFFFF">{title}</font>',
+        ps('h', al=TA_LEFT, lead=10))]],
         [col_w])
     t.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, -1), BLUE),
-        ('TOPPADDING',    (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 6),
+        ('TOPPADDING',    (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 5),
         ('LINEBELOW',     (0, 0), (-1, -1), 1.0, GOLD),
     ]))
     return t
 
 
 # ── Bordered box ──────────────────────────────────────────────────────────────
-def box(content_rows, col_w=None, bg=BGOLD, border=GOLD, pad=6):
+def box(content_rows, col_w=None, bg=BGOLD, border=GOLD, pad=5):
     if col_w is None:
-        col_w = COL_W
-    t = Table([[c] for c in content_rows], [col_w - 2])
+        col_w = INNER_W
+    inner = col_w - 2 * pad / 28.35  # subtract padding from inner width
+    t = Table([[c] for c in content_rows], [col_w])
     t.setStyle(TableStyle([
         ('BACKGROUND',   (0, 0), (-1, -1), bg),
         ('BOX',          (0, 0), (-1, -1), 0.8, border),
@@ -148,14 +151,14 @@ def compact_table(rows, widths, hdr_bg=BLUE, hdr_tc=W,
         ('BACKGROUND',    (0, 0), (-1, 0),  hdr_bg),
         ('TEXTCOLOR',     (0, 0), (-1, 0),  hdr_tc),
         ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
-        ('FONTSIZE',      (0, 0), (-1, -1), 7),
+        ('FONTSIZE',      (0, 0), (-1, -1), 6.5),
         ('ROWBACKGROUNDS',(0, 1), (-1, -1), row_bgs),
         ('GRID',          (0, 0), (-1, -1), 0.25, LG),
         ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING',    (0, 0), (-1, -1), 2),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 3),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 3),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 2),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 2),
     ]
     if extra:
         base += extra
@@ -164,11 +167,11 @@ def compact_table(rows, widths, hdr_bg=BLUE, hdr_tc=W,
     return t
 
 
-def tc(txt, bold=False, clr=BK, sz=7, al=TA_CENTER):
+def tc(txt, bold=False, clr=BK, sz=6.5, al=TA_CENTER):
     fn = 'Helvetica-Bold' if bold else 'Helvetica'
     return Paragraph(
         f'<font name="{fn}" size="{sz}" color="{clr.hexval()}">{txt}</font>',
-        ps('tc', al=al, lead=9.5))
+        ps('tc', al=al, lead=9))
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -689,26 +692,137 @@ def build_col3():
 
 
 # ────────────────────────────────────────────────────────────────────────────
+#  UCU BADGE (drawn with ReportLab canvas — no external image needed)
+# ────────────────────────────────────────────────────────────────────────────
+from reportlab.platypus import Flowable
+
+class UCUBadge(Flowable):
+    """Shield-shaped UCU crest drawn programmatically."""
+    def __init__(self, size=52):
+        super().__init__()
+        self.size = size
+        self.width  = size
+        self.height = size
+
+    def draw(self):
+        c = self.canv
+        s = self.size
+        cx = s / 2
+
+        # Shield outline (deep blue)
+        SHIELD_BLUE = colors.HexColor('#003087')
+        SHIELD_RED  = colors.HexColor('#CC0033')
+        SHIELD_GOLD = colors.HexColor('#C8A84B')
+
+        # Draw shield shape
+        c.setFillColor(SHIELD_BLUE)
+        c.setStrokeColor(SHIELD_GOLD)
+        c.setLineWidth(1.2)
+        p = c.beginPath()
+        p.moveTo(cx, s * 0.04)          # top-left
+        p.lineTo(s * 0.96, s * 0.04)    # top-right
+        p.lineTo(s * 0.96, s * 0.62)    # right shoulder
+        p.curveTo(s * 0.96, s * 0.85, cx, s * 0.98, cx, s * 0.98)  # right arc to bottom
+        p.curveTo(cx, s * 0.98, s * 0.04, s * 0.85, s * 0.04, s * 0.62)  # left arc
+        p.lineTo(s * 0.04, s * 0.04)    # top-left
+        p.close()
+        c.drawPath(p, fill=1, stroke=1)
+
+        # Cross (white)
+        c.setFillColor(colors.white)
+        bar_w = s * 0.10
+        # Vertical bar
+        c.rect(cx - bar_w / 2, s * 0.14, bar_w, s * 0.56, fill=1, stroke=0)
+        # Horizontal bar
+        c.rect(s * 0.18, s * 0.44, s * 0.64, bar_w, fill=1, stroke=0)
+
+        # Alpha (Α) top-left quadrant — gold text
+        c.setFillColor(SHIELD_GOLD)
+        c.setFont('Helvetica-Bold', s * 0.16)
+        c.drawCentredString(cx - s * 0.22, s * 0.56, 'A')
+
+        # Omega (Ω) top-right quadrant — gold text
+        c.drawCentredString(cx + s * 0.22, s * 0.56, '\u03A9')
+
+        # Bottom banner (gold)
+        c.setFillColor(SHIELD_GOLD)
+        p2 = c.beginPath()
+        p2.moveTo(s * 0.08, s * 0.14)
+        p2.lineTo(s * 0.92, s * 0.14)
+        p2.lineTo(s * 0.92, s * 0.08)
+        p2.lineTo(s * 0.08, s * 0.08)
+        p2.close()
+        c.drawPath(p2, fill=1, stroke=0)
+
+        # "UCU" text on banner
+        c.setFillColor(SHIELD_BLUE)
+        c.setFont('Helvetica-Bold', s * 0.10)
+        c.drawCentredString(cx, s * 0.09, 'UCU')
+
+
+# ────────────────────────────────────────────────────────────────────────────
 #  FULL-WIDTH HEADER
 # ────────────────────────────────────────────────────────────────────────────
 def build_header():
-    header_tbl = Table([
+    badge = UCUBadge(size=56)
+
+    # Left cell: UCU badge
+    badge_cell = Table([[badge]], [1.8 * cm])
+    badge_cell.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, -1), BLUE),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+
+    # Centre cell: title + author
+    title_w = CW - 3.6 * cm
+    title_cell = Table([
         [Paragraph(
-            'Uganda Christian University  |  BSc Computer Science',
-            ps('hu', fn='Helvetica', fs=8.5, tc=W, al=TA_CENTER, lead=11))],
+            'Uganda Christian University  |  BSc Computer Science  '
+            '|  A Centre of Excellence in the Heart of Africa',
+            ps('hu', fn='Helvetica', fs=8, tc=colors.HexColor('#C8A84B'),
+               al=TA_CENTER, lead=10))],
         [Paragraph(
             'Risk-Adaptive Zero Trust for Securing Hybrid Workforces<br/>'
             'Using Self-Supervised Anomaly Detection',
-            ps('ht', fn='Helvetica-Bold', fs=18, tc=W, al=TA_CENTER, lead=22))],
+            ps('ht', fn='Helvetica-Bold', fs=17, tc=W, al=TA_CENTER, lead=21))],
         [Paragraph(
             'Okado Aaron Obbo  |  Reg No: S24B23/015  |  Student No: B29782',
-            ps('ha', fn='Helvetica', fs=9, tc=W, al=TA_CENTER, lead=12))],
-    ], [CW])
+            ps('ha', fn='Helvetica', fs=8.5, tc=W, al=TA_CENTER, lead=11))],
+    ], [title_w])
+    title_cell.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, -1), BLUE),
+        ('TOPPADDING',    (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
+    ]))
+
+    # Right cell: mirror badge for symmetry
+    badge_r = UCUBadge(size=56)
+    badge_r_cell = Table([[badge_r]], [1.8 * cm])
+    badge_r_cell.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, -1), BLUE),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 8),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+
+    header_tbl = Table([[badge_cell, title_cell, badge_r_cell]],
+                       [1.8 * cm, title_w, 1.8 * cm])
     header_tbl.setStyle(TableStyle([
         ('BACKGROUND',    (0, 0), (-1, -1), BLUE),
-        ('TOPPADDING',    (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('LINEBELOW',     (0, -1), (-1, -1), 2.0, GOLD),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW',     (0, 0), (-1, -1), 2.5, GOLD),
+        ('TOPPADDING',    (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
     ]))
     return header_tbl
 
@@ -741,7 +855,6 @@ def assemble_body(col1_items, col2_items, col3_items):
     ReportLab nested tables let us place independent stacks side-by-side.
     """
     def col_table(items, w):
-        # Each item becomes a row in a single-column table
         rows = [[item] for item in items]
         t = Table(rows, colWidths=[w])
         t.setStyle(TableStyle([
@@ -753,25 +866,28 @@ def assemble_body(col1_items, col2_items, col3_items):
         ]))
         return t
 
-    c1 = col_table(col1_items, COL_W)
-    c2 = col_table(col2_items, COL_W)
-    c3 = col_table(col3_items, COL_W)
+    c1 = col_table(col1_items, INNER_W)
+    c2 = col_table(col2_items, INNER_W)
+    c3 = col_table(col3_items, INNER_W)
+
+    half_gap = int(GAP * 28.35 / 2)
 
     body = Table([[c1, c2, c3]],
                  colWidths=[COL_W, COL_W, COL_W],
                  rowHeights=None)
     body.setStyle(TableStyle([
         ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING',    (0, 0), (-1, -1), 0),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
-        # Thin vertical dividers between columns
-        ('LINEAFTER',  (0, 0), (1, -1), 0.5, LG),
-        ('LEFTPADDING',  (1, 0), (1, -1), int(GAP * 28.35 / 2)),
-        ('RIGHTPADDING', (0, 0), (0, -1), int(GAP * 28.35 / 2)),
-        ('LEFTPADDING',  (2, 0), (2, -1), int(GAP * 28.35 / 2)),
-        ('RIGHTPADDING', (1, 0), (1, -1), int(GAP * 28.35 / 2)),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 2),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 2),
+        # Thin vertical dividers
+        ('LINEAFTER',     (0, 0), (1, -1),  0.5, LG),
+        # Column gutter spacing
+        ('LEFTPADDING',   (1, 0), (1, -1),  half_gap),
+        ('RIGHTPADDING',  (0, 0), (0, -1),  half_gap),
+        ('LEFTPADDING',   (2, 0), (2, -1),  half_gap),
+        ('RIGHTPADDING',  (1, 0), (1, -1),  half_gap),
     ]))
     return body
 
