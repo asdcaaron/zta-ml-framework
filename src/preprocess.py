@@ -244,10 +244,21 @@ def preprocess_single_sample(feature_dict: dict,
         if col in CATEGORICAL_COLS:
             le = encoders[col]
             val = le.transform([str(val)])[0] if str(val) in le.classes_ else 0
+        else:
+            # Apply log1p to outlier columns BEFORE scaling —
+            # the scaler was fitted on log1p-transformed data
+            val = float(val)
+            if col in LOG_SCALE_COLS:
+                val = float(np.log1p(max(val, 0.0)))
         row.append(float(val))
 
     sample = np.array(row).reshape(1, -1)
     sample = scaler.transform(sample)
+    # Clip to [0, 1] — test samples may fall outside the training range,
+    # causing scaler.transform() to produce values > 1 or < 0.
+    # The models were trained on [0,1] data so out-of-range values produce
+    # spurious reconstruction errors. Clipping is the correct fix.
+    sample = np.clip(sample, 0.0, 1.0)
     sample = sample.reshape(1, n_features, 1)
     return sample
 
