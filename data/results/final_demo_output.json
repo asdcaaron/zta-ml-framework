@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-08T12:50:26.504171+00:00",
+  "timestamp": "2026-11-12T08:30:39.024902+00:00",
   "models": {
     "cnn_gru": "C:\\Users\\AARON\\Desktop\\Final Year Project Prototype\\zta-ml-framework\\src\\..\\data\\cnn_gru_model.keras",
     "autoencoder": "C:\\Users\\AARON\\Desktop\\Final Year Project Prototype\\zta-ml-framework\\src\\..\\data\\autoencoder_model.keras",
-    "threshold": 0.00268159
+    "threshold": 0.00250447
   },
   "samples": [
     {
@@ -24,12 +24,12 @@
         ]
       },
       "autoencoder": {
-        "reconstruction_error": 0.00125255,
-        "threshold": 0.00268159,
+        "reconstruction_error": 0.00097613,
+        "threshold": 0.00250447,
         "is_anomaly": false,
-        "ae_risk_score": 0.155697
+        "ae_risk_score": 0.129919
       },
-      "combined_risk_score": 0.155697,
+      "combined_risk_score": 0.129919,
       "zta_decision": "ALLOW"
     },
     {
@@ -50,8 +50,8 @@
         ]
       },
       "autoencoder": {
-        "reconstruction_error": 0.0311726,
-        "threshold": 0.00268159,
+        "reconstruction_error": 0.00981351,
+        "threshold": 0.00250447,
         "is_anomaly": true,
         "ae_risk_score": 1.0
       },
@@ -76,10 +76,10 @@
         ]
       },
       "autoencoder": {
-        "reconstruction_error": 0.0009484,
-        "threshold": 0.00268159,
-        "is_anomaly": false,
-        "ae_risk_score": 0.11789
+        "reconstruction_error": 0.00690351,
+        "threshold": 0.00250447,
+        "is_anomaly": true,
+        "ae_risk_score": 0.918823
       },
       "combined_risk_score": 0.999228,
       "zta_decision": "BLOCK"
@@ -102,13 +102,13 @@
         ]
       },
       "autoencoder": {
-        "reconstruction_error": 0.00165712,
-        "threshold": 0.00268159,
-        "is_anomaly": false,
-        "ae_risk_score": 0.205988
+        "reconstruction_error": 0.00301026,
+        "threshold": 0.00250447,
+        "is_anomaly": true,
+        "ae_risk_score": 0.40065
       },
-      "combined_risk_score": 0.267162,
-      "zta_decision": "ALLOW"
+      "combined_risk_score": 0.40065,
+      "zta_decision": "MONITOR"
     },
     {
       "class_id": 4,
@@ -128,12 +128,12 @@
         ]
       },
       "autoencoder": {
-        "reconstruction_error": 0.00095309,
-        "threshold": 0.00268159,
+        "reconstruction_error": 0.00080108,
+        "threshold": 0.00250447,
         "is_anomaly": false,
-        "ae_risk_score": 0.118473
+        "ae_risk_score": 0.106619
       },
-      "combined_risk_score": 0.118473,
+      "combined_risk_score": 0.106619,
       "zta_decision": "ALLOW"
     }
   ],
@@ -141,15 +141,15 @@
     {
       "class": "Normal",
       "cnn_pred": "Normal",
-      "ae_error": 0.00125255,
+      "ae_error": 0.00097613,
       "ae_anomaly": "NO",
-      "risk_score": 0.155697,
+      "risk_score": 0.129919,
       "zta_decision": "ALLOW"
     },
     {
       "class": "DoS",
       "cnn_pred": "DoS",
-      "ae_error": 0.0311726,
+      "ae_error": 0.00981351,
       "ae_anomaly": "YES",
       "risk_score": 1.0,
       "zta_decision": "BLOCK"
@@ -157,25 +157,25 @@
     {
       "class": "Probe",
       "cnn_pred": "Probe",
-      "ae_error": 0.0009484,
-      "ae_anomaly": "NO",
+      "ae_error": 0.00690351,
+      "ae_anomaly": "YES",
       "risk_score": 0.999228,
       "zta_decision": "BLOCK"
     },
     {
       "class": "R2L",
       "cnn_pred": "Normal",
-      "ae_error": 0.00165712,
-      "ae_anomaly": "NO",
-      "risk_score": 0.267162,
-      "zta_decision": "ALLOW"
+      "ae_error": 0.00301026,
+      "ae_anomaly": "YES",
+      "risk_score": 0.40065,
+      "zta_decision": "MONITOR"
     },
     {
       "class": "U2R",
       "cnn_pred": "Normal",
-      "ae_error": 0.00095309,
+      "ae_error": 0.00080108,
       "ae_anomaly": "NO",
-      "risk_score": 0.118473,
+      "risk_score": 0.106619,
       "zta_decision": "ALLOW"
     }
   ]
