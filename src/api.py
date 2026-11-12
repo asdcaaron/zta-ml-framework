@@ -25,6 +25,9 @@ import sys
 import time
 import logging
 import numpy as np
+import json
+import pandas as pd
+from datetime import datetime
 
 # Allow running from project root: python src/api.py
 sys.path.insert(0, os.path.dirname(__file__))
@@ -35,10 +38,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']  = '3'
 
 import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify, abort, send_file
 from flask_cors import CORS
 
-from preprocess import preprocess_single_sample, FEATURE_COLS
+from preprocess import preprocess_single_sample, FEATURE_COLS, COLUMNS, ATTACK_MAP
 from model import score_to_risk, CLASS_NAMES
 from autoencoder import load_autoencoder, predict_anomaly
 
@@ -65,6 +68,28 @@ model_load_time = None
 ae_model = None
 ae_threshold = None
 ae_model_load_time = None
+
+# ── Demo session state ────────────────────────────────────────────────────────
+_session_stats = {
+    'total': 0,
+    'by_decision': {'ALLOW': 0, 'MONITOR': 0, 'CHALLENGE_MFA': 0, 'BLOCK': 0},
+    'by_class':    {'Normal': 0, 'DoS': 0, 'Probe': 0, 'R2L': 0, 'U2R': 0},
+}
+_audit_log = []   # list of dicts, capped at 200
+AUDIT_LOG_PATH = os.path.join('data', 'audit.jsonl')
+
+
+def _append_audit(entry: dict):
+    """Append entry to in-memory audit log and persist to data/audit.jsonl."""
+    _audit_log.append(entry)
+    if len(_audit_log) > 200:
+        _audit_log.pop(0)
+    try:
+        os.makedirs('data', exist_ok=True)
+        with open(AUDIT_LOG_PATH, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry) + '\n')
+    except Exception as e:
+        log.warning(f'audit write failed: {e}')
 
 
 def load_model():
@@ -416,6 +441,163 @@ def predict_batch():
         'monitored':  action_counts['MONITOR'],
         'allowed':    action_counts['ALLOW'],
     }), 200
+
+
+# ── Demo scenario endpoints ───────────────────────────────────────────────────
+
+SCENARIO_META = {
+    'normal': {
+        'source_ip':  '10.20.0.50',
+        'dest_ip':    '10.10.0.10',
+        'segment':    'Branch Office → HQ Server',
+        'label':      0,
+        'label_name': 'Normal',
+    },
+    'dos': {
+        'source_ip':  '203.0.113.10',
+        'dest_ip':    '10.10.0.0/24',
+        'segment':    'Internet Attacker → HQ Network',
+        'label':      1,
+        'label_name': 'DoS',
+    },
+    'probe': {
+        'source_ip':  '10.20.0.50',
+        'dest_ip':    '172.16.0.0/24',
+        'segment':    'Branch-Compromised-Host → DMZ',
+        'label':      2,
+        'label_name': 'Probe',
+    },
+    'r2l': {
+        'source_ip':  '0.0.0.0',
+        'dest_ip':    '10.10.0.1',
+        'segment':    'Remote User → ZTA Gateway',
+        'label':      3,
+        'label_name': 'R2L',
+    },
+    'u2r': {
+        'source_ip':  '10.10.0.99',
+        'dest_ip':    '10.10.0.1',
+        'segment':    'Internal Host → ZTA Gateway',
+        'label':      4,
+        'label_name': 'U2R',
+    },
+}
+
+# Pre-load the test CSV once to avoid re-reading per request
+_test_df_cache = None
+
+def _get_test_df():
+    global _test_df_cache
+    if _test_df_cache is None:
+        test_path = os.path.join('data', 'NSL_KDD_Test.csv')
+        df = pd.read_csv(test_path, names=COLUMNS)
+        df['label'] = df['label'].str.strip().str.lower().map(
+            lambda x: ATTACK_MAP.get(x, 0)
+        )
+        _test_df_cache = df
+    return _test_df_cache
+
+
+@app.route('/demo/scenario/<scenario_name>', methods=['GET'])
+def demo_scenario(scenario_name):
+    """Run a pre-defined demo scenario sampled from NSL-KDD test data."""
+    if scenario_name not in SCENARIO_META:
+        return jsonify({'error': f"Unknown scenario '{scenario_name}'. "
+                        "Valid: normal, dos, probe, r2l, u2r"}), 400
+    if model is None or ae_model is None:
+        return jsonify({'error': 'Models not loaded yet. '
+                        'Wait for startup or run train.py first.'}), 503
+
+    meta = SCENARIO_META[scenario_name]
+    df = _get_test_df()
+
+    # Filter rows matching the target label
+    subset = df[df['label'] == meta['label']]
+    if subset.empty:
+        # Fallback: use any row and override label_name
+        subset = df.sample(1)
+    else:
+        subset = subset.sample(1)
+
+    row = subset.iloc[0]
+
+    # Build feature dict from FEATURE_COLS (excludes label, difficulty, DROP_COLS)
+    feature_dict = {col: row[col] for col in FEATURE_COLS}
+
+    # Raw feature values for display (40 values — keep strings for categoricals)
+    from preprocess import CATEGORICAL_COLS as _CAT_COLS
+    feature_vector = []
+    for col in FEATURE_COLS:
+        if col not in row.index:
+            feature_vector.append(0.0)
+        elif col in _CAT_COLS:
+            feature_vector.append(str(row[col]))
+        else:
+            try:
+                feature_vector.append(float(row[col]))
+            except (ValueError, TypeError):
+                feature_vector.append(str(row[col]))
+
+    sample = preprocess_single_sample(feature_dict, ARTIFACTS_DIR)
+    result = _run_inference(sample)
+
+    # Update session stats
+    decision = result['zta_decision']
+    traffic_class = meta['label_name']
+    _session_stats['total'] += 1
+    if decision in _session_stats['by_decision']:
+        _session_stats['by_decision'][decision] += 1
+    if traffic_class in _session_stats['by_class']:
+        _session_stats['by_class'][traffic_class] += 1
+
+    # Build audit entry
+    audit_entry = {
+        'timestamp':    datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'scenario':     scenario_name,
+        'source_ip':    meta['source_ip'],
+        'dest_ip':      meta['dest_ip'],
+        'segment':      meta['segment'],
+        'traffic_class_label': traffic_class,
+        'cnn_risk':     result['cnn_risk'],
+        'ae_risk':      result['ae_risk'],
+        'combined_risk': result['combined_risk'],
+        'zta_decision': decision,
+        'classification': result['classification'],
+        'confidence':   result['confidence'],
+    }
+    _append_audit(audit_entry)
+
+    log.info(f"[/demo/scenario/{scenario_name}] decision={decision} "
+             f"risk={result['combined_risk']} class={traffic_class}")
+
+    return jsonify({
+        **result,
+        'scenario':            scenario_name,
+        'source_ip':           meta['source_ip'],
+        'dest_ip':             meta['dest_ip'],
+        'segment':             meta['segment'],
+        'traffic_class_label': traffic_class,
+        'feature_vector':      feature_vector,
+    }), 200
+
+
+@app.route('/demo/stats', methods=['GET'])
+def demo_stats():
+    """Return current session statistics."""
+    return jsonify(_session_stats), 200
+
+
+@app.route('/demo/log', methods=['GET'])
+def demo_log():
+    """Return last 50 audit log entries."""
+    return jsonify(_audit_log[-50:]), 200
+
+
+@app.route('/dashboard')
+def serve_dashboard():
+    """Serve the live demo dashboard HTML file."""
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'demo_dashboard.html')
+    return send_file(path)
 
 
 # ── Error handlers ────────────────────────────────────────────────────────────

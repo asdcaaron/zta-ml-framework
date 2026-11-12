@@ -1,611 +1,1196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Risk-Adaptive ZTA — Live Demo</title>
+  <title>Risk-Adaptive Zero Trust — Live Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #0a0e1a;
+      --sidebar:    #0d1420;
+      --card:       #111827;
+      --border:     #1e2d45;
+      --blue:       #003087;
+      --gold:       #C8A84B;
+      --green:      #00ff88;
+      --red:        #ff4444;
+      --amber:      #ffaa00;
+      --orange:     #ff6600;
+      --purple:     #bb88ff;
+      --text:       #e2e8f0;
+      --muted:      #94a3b8;
+      --font:       'Inter', 'Segoe UI', sans-serif;
+    }
+    html { font-size: 15px; }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      min-width: 1280px;
     }
 
     /* ── Header ── */
     .header {
-      background: linear-gradient(135deg, #003087 0%, #0055cc 100%);
-      padding: 18px 32px;
+      background: linear-gradient(135deg, #001a4d 0%, #003087 60%, #0044aa 100%);
+      padding: 14px 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 3px solid #C8A84B;
+      border-bottom: 3px solid var(--gold);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header h1 { font-size: 1.15rem; font-weight: 700; }
-    .header .meta { font-size: 0.78rem; opacity: 0.85; text-align: right; }
-    .live-dot {
-      display: inline-block; width: 10px; height: 10px;
-      background: #2ecc71; border-radius: 50%;
-      animation: pulse 1.5s infinite; margin-right: 6px;
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-crest { font-size: 2.4rem; line-height: 1; }
+    .header-titles { display: flex; flex-direction: column; gap: 2px; }
+    .header-uni   { font-size: 0.72rem; color: var(--gold); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .header-main  { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
+    .header-sub   { font-size: 0.72rem; color: rgba(255,255,255,0.65); }
+    .header-right { text-align: right; }
+    .header-clock { font-size: 1.5rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+    .header-date  { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+    /* ── Offline banner ── */
+    .offline-banner {
+      display: none;
+      background: #3d0000;
+      border: 1px solid var(--red);
+      color: var(--red);
+      padding: 10px 32px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
     }
-    @keyframes pulse {
-      0%,100% { opacity:1; transform:scale(1); }
-      50%      { opacity:.4; transform:scale(1.3); }
+    .offline-banner.visible { display: block; }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      background: var(--sidebar);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .status-bar-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+    }
+    .pill-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pill-dot.green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .pill-dot.red    { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+    .pill-dot.amber  { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .pill-dot.loading { background: var(--amber); animation: blink 1s infinite; }
+    .pill-name  { font-weight: 600; color: var(--text); }
+    .pill-status { color: var(--muted); font-size: 0.72rem; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Main Grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      gap: 16px;
+      padding: 16px 24px;
+      min-height: calc(100vh - 200px);
     }
 
-    /* ── Layout ── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 18px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
-
-    /* ── Cards ── */
+    /* ── Generic card ── */
     .card {
-      background: #161b22;
-      border: 1px solid #30363d;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px;
     }
-    .card h3 {
+    .card-title {
       font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #8b949e;
-      margin-bottom: 10px;
-    }
-
-    /* ── Stat boxes ── */
-    .stat-val {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #C8A84B;
-    }
-    .stat-label { font-size: 0.78rem; color: #8b949e; margin-top: 2px; }
-
-    /* ── Pipeline ── */
-    .pipeline {
+      color: var(--gold);
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 18px;
+      justify-content: space-between;
     }
-    .pipe-box {
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 0.78rem;
-      text-align: center;
-      min-width: 110px;
-      flex: 1;
-    }
-    .pipe-box .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
-    .pipe-box.new { border-color: #C8A84B; background: #1a1500; }
-    .pipe-box.new .badge {
-      display: inline-block;
-      background: #C8A84B;
-      color: #000;
-      font-size: 0.6rem;
-      font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 4px;
-      margin-top: 3px;
-    }
-    .arrow { color: #6e7681; font-size: 1.2rem; flex-shrink: 0; }
 
-    /* ── Scenarios ── */
-    .scenario-btn {
-      width: 100%;
-      padding: 12px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: all 0.2s;
-      margin-bottom: 8px;
-      text-align: left;
-      display: flex;
-      align-items: center;
+    /* ── Left Panel ── */
+    .left-panel { display: flex; flex-direction: column; gap: 12px; }
+
+    .net-counters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
+      margin-bottom: 4px;
     }
-    .btn-normal  { background: #0d3323; color: #3fb950; border: 1px solid #238636; }
-    .btn-dos     { background: #3d0f0f; color: #f85149; border: 1px solid #da3633; }
-    .btn-probe   { background: #3d2c00; color: #d29922; border: 1px solid #9e6a03; }
-    .scenario-btn:hover { transform: translateX(3px); filter: brightness(1.2); }
-    .scenario-btn .desc { font-size: 0.72rem; font-weight: 400; opacity: 0.8; margin-top: 2px; }
-
-    /* ── Result panel ── */
-    .result-panel {
-      background: #0d1117;
-      border: 2px solid #30363d;
-      border-radius: 10px;
-      padding: 18px;
-      min-height: 220px;
-      position: relative;
-    }
-    .result-panel.action-ALLOW          { border-color: #238636; }
-    .result-panel.action-MONITOR        { border-color: #9e6a03; }
-    .result-panel.action-CHALLENGE_MFA  { border-color: #d29922; }
-    .result-panel.action-BLOCK          { border-color: #da3633; }
-
-    .action-badge {
-      display: inline-block;
-      font-size: 1.6rem;
-      font-weight: 800;
-      padding: 8px 20px;
+    .net-counter {
+      background: var(--sidebar);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      margin-bottom: 12px;
-      letter-spacing: 2px;
+      padding: 10px 12px;
+      text-align: center;
     }
-    .badge-ALLOW         { background: #238636; color: #fff; }
-    .badge-MONITOR       { background: #9e6a03; color: #fff; }
-    .badge-CHALLENGE_MFA { background: #d29922; color: #000; }
-    .badge-BLOCK         { background: #da3633; color: #fff; }
+    .net-counter-num  { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+    .net-counter-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 3px; }
+    .num-total   { color: #60a5fa; }
+    .num-normal  { color: var(--green); }
+    .num-susp    { color: var(--amber); }
+    .num-blocked { color: var(--red); }
 
-    .risk-bar-wrap {
-      background: #21262d;
-      border-radius: 6px;
-      height: 14px;
-      margin: 10px 0;
+    .mini-chart { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
+    .bar-row { display: flex; align-items: center; gap: 8px; }
+    .bar-row-label { font-size: 0.68rem; color: var(--muted); width: 68px; flex-shrink: 0; }
+    .bar-track {
+      flex: 1; height: 10px;
+      background: var(--sidebar);
+      border-radius: 5px;
       overflow: hidden;
     }
-    .risk-bar {
-      height: 100%;
-      border-radius: 6px;
+    .bar-fill {
+      height: 100%; border-radius: 5px;
       transition: width 0.6s ease;
-      background: linear-gradient(90deg, #238636, #d29922, #da3633);
     }
+    .bar-pct { font-size: 0.65rem; color: var(--muted); width: 30px; text-align: right; }
 
-    .result-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 12px; }
-    .result-item { background: #161b22; border-radius: 6px; padding: 10px; text-align: center; }
-    .result-item .val { font-size: 1.1rem; font-weight: 700; color: #C8A84B; }
-    .result-item .lbl { font-size: 0.7rem; color: #8b949e; margin-top: 2px; }
-
-    .prob-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.78rem; }
-    .prob-row .cls { width: 60px; color: #8b949e; }
-    .prob-row .bar-w { flex: 1; background: #21262d; border-radius: 4px; height: 8px; overflow: hidden; }
-    .prob-row .bar-f { height: 100%; border-radius: 4px; background: #003087; transition: width 0.5s; }
-    .prob-row .pct { width: 42px; text-align: right; }
-
-    /* ── Comparison table ── */
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    thead th {
-      background: #003087;
-      color: #fff;
-      padding: 8px 10px;
-      text-align: left;
-      font-weight: 600;
+    .segment-box {
+      background: var(--sidebar);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
     }
-    tbody tr:nth-child(even) { background: #161b22; }
-    tbody tr:nth-child(odd)  { background: #0d1117; }
-    tbody td { padding: 8px 10px; }
-    tbody tr.highlight td { background: #0d3323; font-weight: 600; color: #3fb950; }
-    .tick   { color: #3fb950; font-weight: 700; }
-    .cross  { color: #f85149; font-weight: 700; }
+    .segment-title { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .segment-name  { font-size: 0.82rem; color: var(--gold); font-weight: 600; }
+    .segment-ips   { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
 
-    /* ── Audit log ── */
-    .log-entry {
-      display: flex;
-      align-items: center;
+    /* ── Centre Column ── */
+    .centre-col { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Scenario buttons */
+    .scenario-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 4px;
-      font-size: 0.78rem;
-      background: #161b22;
-      animation: fadeIn 0.4s ease;
     }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; } }
-    .log-action {
+    .scenario-btn {
+      border: none; border-radius: 10px;
+      padding: 14px 10px 12px;
+      cursor: pointer;
+      font-family: var(--font);
+      text-align: left;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .scenario-btn:hover  { transform: translateY(-2px); }
+    .scenario-btn:active { transform: translateY(0); opacity: 0.9; }
+    .scenario-btn.loading-btn { opacity: 0.6; pointer-events: none; }
+    .scenario-btn.loading-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.3);
+      animation: loadOverlay 0.8s infinite alternate;
+    }
+    @keyframes loadOverlay { from{opacity:0.2} to{opacity:0.6} }
+
+    .btn-icon   { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+    .btn-title  { font-size: 0.82rem; font-weight: 700; color: #fff; display: block; }
+    .btn-sub    { font-size: 0.65rem; opacity: 0.75; color: #fff; display: block; margin-top: 4px; line-height: 1.4; }
+
+    .btn-normal   { background: linear-gradient(135deg, #003a1f, #005c30); border: 1px solid #00cc60; box-shadow: 0 0 10px rgba(0,255,136,0.15); }
+    .btn-dos      { background: linear-gradient(135deg, #3d0000, #660000); border: 1px solid #ff4444; box-shadow: 0 0 10px rgba(255,68,68,0.2); }
+    .btn-probe    { background: linear-gradient(135deg, #3d2600, #664000); border: 1px solid #ffaa00; box-shadow: 0 0 10px rgba(255,170,0,0.2); }
+    .btn-r2l      { background: linear-gradient(135deg, #3d1a00, #662e00); border: 1px solid #ff6600; box-shadow: 0 0 10px rgba(255,102,0,0.2); }
+
+    /* Detection Results */
+    .detection-panel { transition: transform 0.3s ease, opacity 0.3s ease; }
+    .detection-panel.slide-in { animation: slideIn 0.35s ease; }
+    @keyframes slideIn { from{transform:translateY(10px);opacity:0.4} to{transform:translateY(0);opacity:1} }
+
+    .class-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
       font-weight: 700;
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      min-width: 110px;
-      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
     }
-    .log-ALLOW         { background: #238636; color: #fff; }
-    .log-MONITOR       { background: #9e6a03; color: #fff; }
-    .log-CHALLENGE_MFA { background: #d29922; color: #000; }
-    .log-BLOCK         { background: #da3633; color: #fff; }
-    .log-ts { color: #8b949e; font-size: 0.7rem; min-width: 75px; }
+    .badge-normal   { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
+    .badge-dos      { background: rgba(255,68,68,0.15);  color: var(--red);   border: 1px solid var(--red); }
+    .badge-probe    { background: rgba(255,170,0,0.15);  color: var(--amber); border: 1px solid var(--amber); }
+    .badge-r2l      { background: rgba(255,102,0,0.15);  color: var(--orange);border: 1px solid var(--orange); }
+    .badge-u2r      { background: rgba(187,136,255,0.15);color: var(--purple);border: 1px solid var(--purple); }
 
-    .spinner {
-      display: none;
-      width: 20px; height: 20px;
-      border: 2px solid #30363d;
-      border-top-color: #C8A84B;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Footer ── */
-    .footer {
-      text-align: center;
+    .dual-models { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 2px; }
+    .model-box {
+      background: var(--sidebar);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 12px;
-      font-size: 0.72rem;
-      color: #6e7681;
-      border-top: 1px solid #21262d;
-      margin-top: 10px;
+    }
+    .model-box-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+    .model-class  { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
+    .conf-label   { font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; }
+    .conf-track   { background: var(--card); border-radius: 4px; height: 8px; overflow: hidden; }
+    .conf-fill    { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #003087, #0088ff); transition: width 0.6s ease; }
+    .conf-pct     { font-size: 0.72rem; color: #60a5fa; margin-top: 4px; font-weight: 600; }
+
+    .ae-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .ae-label { font-size: 0.65rem; color: var(--muted); }
+    .ae-val   { font-size: 0.8rem; font-weight: 600; }
+    .anomaly-yes { color: var(--red); }
+    .anomaly-no  { color: var(--green); }
+
+    /* Risk Assessment */
+    .risk-bars { display: flex; flex-direction: column; gap: 10px; }
+    .risk-row { }
+    .risk-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .risk-row-label   { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+    .risk-row-val     { font-size: 0.72rem; font-weight: 700; }
+    .risk-track { background: var(--sidebar); border-radius: 5px; height: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .risk-fill  { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
+    .rf-low      { background: linear-gradient(90deg, #004d2a, var(--green)); }
+    .rf-elevated { background: linear-gradient(90deg, #4d3300, var(--amber)); }
+    .rf-high     { background: linear-gradient(90deg, #4d2200, var(--orange)); }
+    .rf-critical { background: linear-gradient(90deg, #4d0000, var(--red)); }
+
+    .combined-risk-display {
+      text-align: center;
+      padding: 16px 0 10px;
+      border-top: 1px solid var(--border);
+      margin-top: 14px;
+    }
+    .combined-risk-num  { font-size: 3rem; font-weight: 800; line-height: 1; transition: color 0.4s; }
+    .combined-risk-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; font-weight: 700; }
+
+    /* ZTA Decision */
+    .decision-panel { text-align: center; }
+    .decision-badge {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin: 6px 0 12px;
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .decision-badge.pulsing { animation: decisionPulse 0.9s ease 3; }
+    @keyframes decisionPulse {
+      0%   { box-shadow: 0 0 0 0px currentColor; }
+      50%  { box-shadow: 0 0 24px 8px currentColor; }
+      100% { box-shadow: 0 0 0 0px currentColor; }
+    }
+    .dec-allow    { color: var(--green);  background: rgba(0,255,136,0.1);  border: 2px solid var(--green); }
+    .dec-monitor  { color: var(--amber);  background: rgba(255,170,0,0.1);  border: 2px solid var(--amber); }
+    .dec-challenge{ color: var(--orange); background: rgba(255,102,0,0.1);  border: 2px solid var(--orange); }
+    .dec-block    { color: var(--red);    background: rgba(255,68,68,0.1);   border: 2px solid var(--red); }
+    .dec-idle     { color: var(--muted);  background: rgba(100,116,139,0.1); border: 2px dashed #334155; }
+
+    .justification { font-size: 0.82rem; color: var(--muted); margin-bottom: 14px; padding: 0 12px; min-height: 1.2em; }
+
+    .session-counts { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 6px; }
+    .sess-count {
+      background: var(--sidebar);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .sess-count-num   { font-size: 1.3rem; font-weight: 800; }
+    .sess-count-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Right Panel — Audit Log ── */
+    .right-panel { display: flex; flex-direction: column; }
+    .audit-log-wrap { flex: 1; display: flex; flex-direction: column; }
+    .audit-scroll {
+      flex: 1;
+      overflow-y: auto;
+      max-height: calc(100vh - 280px);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .audit-scroll::-webkit-scrollbar { width: 4px; }
+    .audit-scroll::-webkit-scrollbar-track { background: transparent; }
+    .audit-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .audit-table { width: 100%; border-collapse: collapse; font-size: 0.68rem; }
+    .audit-table th {
+      background: var(--sidebar);
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 6px 6px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+    }
+    .audit-table td { padding: 5px 6px; border-bottom: 1px solid rgba(30,45,69,0.6); vertical-align: middle; }
+    .audit-row-allow    td { color: var(--green); }
+    .audit-row-monitor  td { color: var(--amber); }
+    .audit-row-challenge td { color: var(--orange); }
+    .audit-row-block    td { color: var(--red); }
+    .audit-row-allow td, .audit-row-monitor td, .audit-row-challenge td, .audit-row-block td { opacity: 0.9; }
+    .audit-row-allow    td:last-child { font-weight: 700; color: var(--green); }
+    .audit-row-monitor  td:last-child { font-weight: 700; color: var(--amber); }
+    .audit-row-challenge td:last-child { font-weight: 700; color: var(--orange); }
+    .audit-row-block    td:last-child { font-weight: 700; color: var(--red); }
+
+    .export-btn {
+      background: var(--sidebar);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: var(--font);
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .export-btn:hover { background: rgba(200,168,75,0.1); }
+
+    /* ── Topology ── */
+    .topology-section {
+      padding: 16px 24px 24px;
+      border-top: 1px solid var(--border);
+    }
+    .topology-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+    .topology-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      overflow: hidden;
+    }
+    .topo-svg { width: 100%; display: block; }
+
+    /* Packet animation */
+    .pkt-normal   { fill: var(--green); }
+    .pkt-dos      { fill: var(--red); }
+    .pkt-probe    { fill: var(--amber); }
+    .pkt-r2l      { fill: var(--orange); }
+    .pkt-u2r      { fill: var(--purple); }
+
+    @keyframes fadeOut { from{opacity:1} to{opacity:0} }
+    .pkt-fade { animation: fadeOut 0.4s ease 2.6s forwards; }
+
+    /* ── Idle state placeholders ── */
+    .idle-hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 20px;
+      opacity: 0.5;
     }
   </style>
 </head>
 <body>
 
-<!-- ── HEADER ──────────────────────────────────────────────────────────── -->
-<div class="header">
-  <div>
-    <h1>Risk-Adaptive Zero Trust — Live Prototype Demo</h1>
-    <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">
-      <span class="live-dot"></span>Flask API running on localhost:5000 &nbsp;|&nbsp;
-      CNN-GRU model loaded &nbsp;|&nbsp; NSL-KDD dataset
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <span class="header-crest">🏛️</span>
+    <div class="header-titles">
+      <span class="header-uni">Uganda Christian University — Mukono</span>
+      <span class="header-main">Risk-Adaptive Zero Trust — Live Demo</span>
+      <span class="header-sub">Okado Aaron Obbo &nbsp;|&nbsp; S24B23/015 &nbsp;|&nbsp; Systems, Infrastructure &amp; Cybersecurity</span>
     </div>
   </div>
-  <div class="meta">
-    <div><strong>Okado Aaron Obbo</strong></div>
-    <div>S24B23/015 &nbsp;|&nbsp; BSc Computer Science</div>
-    <div>Uganda Christian University</div>
+  <div class="header-right">
+    <div class="header-clock" id="live-clock">00:00:00</div>
+    <div class="header-date"  id="live-date">Loading…</div>
+  </div>
+</header>
+
+<!-- Offline banner -->
+<div class="offline-banner" id="offline-banner">
+  ⚠ API OFFLINE — Start with: <strong>python src/api.py</strong>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span class="status-bar-label">System Status:</span>
+  <div class="status-pill" id="pill-cnn">
+    <span class="pill-dot loading" id="dot-cnn"></span>
+    <span class="pill-name">CNN-GRU Model</span>
+    <span class="pill-status" id="txt-cnn">Checking…</span>
+  </div>
+  <div class="status-pill" id="pill-ae">
+    <span class="pill-dot loading" id="dot-ae"></span>
+    <span class="pill-name">Autoencoder Model</span>
+    <span class="pill-status" id="txt-ae">Checking…</span>
+  </div>
+  <div class="status-pill" id="pill-api">
+    <span class="pill-dot loading" id="dot-api"></span>
+    <span class="pill-name">Flask API</span>
+    <span class="pill-status" id="txt-api">Checking…</span>
+  </div>
+  <div class="status-pill">
+    <span class="pill-dot amber"></span>
+    <span class="pill-name">Zeek Pipeline</span>
+    <span class="pill-status">Simulated (GNS3)</span>
   </div>
 </div>
 
-<div class="container">
+<!-- Main Grid -->
+<div class="main-grid">
 
-  <!-- ── STATS ROW ─────────────────────────────────────────────────────── -->
-  <div class="grid-3" style="margin-top:16px;">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
     <div class="card">
-      <h3>CNN-GRU Model</h3>
-      <div class="stat-val">76%</div>
-      <div class="stat-label">Test Accuracy on NSL-KDD</div>
-      <div style="margin-top:6px;font-size:0.75rem;color:#8b949e;">
-        Val accuracy: 97.3% &nbsp;|&nbsp; 327K parameters<br/>
-        Classes: Normal · DoS · Probe · R2L · U2R
+      <div class="card-title">Network Activity</div>
+      <div class="net-counters">
+        <div class="net-counter">
+          <div class="net-counter-num num-total" id="cnt-total">0</div>
+          <div class="net-counter-label">Total</div>
+        </div>
+        <div class="net-counter">
+          <div class="net-counter-num num-normal" id="cnt-normal">0</div>
+          <div class="net-counter-label">Normal</div>
+        </div>
+        <div class="net-counter">
+          <div class="net-counter-num num-susp" id="cnt-susp">0</div>
+          <div class="net-counter-label">Suspicious</div>
+        </div>
+        <div class="net-counter">
+          <div class="net-counter-num num-blocked" id="cnt-blocked">0</div>
+          <div class="net-counter-label">Blocked</div>
+        </div>
       </div>
-    </div>
-    <div class="card">
-      <h3>Training Dataset</h3>
-      <div class="stat-val">125K</div>
-      <div class="stat-label">NSL-KDD training samples</div>
-      <div style="margin-top:6px;font-size:0.75rem;color:#8b949e;">
-        40 features (noise-cleaned)<br/>
-        22,543 test samples
-      </div>
-    </div>
-    <div class="card">
-      <h3>ZTA Response Time</h3>
-      <div class="stat-val">&lt;2s</div>
-      <div class="stat-label">Detection to enforcement</div>
-      <div style="margin-top:6px;font-size:0.75rem;color:#8b949e;">
-        Legacy VPN: manual (hours)<br/>
-        ZTA Only: ~7.5 seconds
-      </div>
-    </div>
-  </div>
-
-  <!-- ── PIPELINE ──────────────────────────────────────────────────────── -->
-  <div class="card" style="margin-bottom:18px;">
-    <h3>Full Technical Pipeline</h3>
-    <div class="pipeline" style="margin-top:10px;">
-      <div class="pipe-box">
-        <span class="icon">🌐</span>
-        <strong>Network Traffic</strong><br/>pcap / live Zeek
-      </div>
-      <div class="arrow">→</div>
-      <div class="pipe-box">
-        <span class="icon">🦈</span>
-        <strong>Zeek (Docker)</strong><br/>conn.log features
-      </div>
-      <div class="arrow">→</div>
-      <div class="pipe-box new">
-        <span class="icon">🧠</span>
-        <strong>CNN-GRU</strong><br/>Known attacks
-        <div><span class="badge">SUPERVISED</span></div>
-      </div>
-      <div class="arrow">+</div>
-      <div class="pipe-box new">
-        <span class="icon">🔍</span>
-        <strong>Autoencoder</strong><br/>Zero-day detect
-        <div><span class="badge">SELF-SUPERVISED</span></div>
-      </div>
-      <div class="arrow">→</div>
-      <div class="pipe-box">
-        <span class="icon">⚖️</span>
-        <strong>Risk Score</strong><br/>0.0 → 1.0
-      </div>
-      <div class="arrow">→</div>
-      <div class="pipe-box">
-        <span class="icon">🔒</span>
-        <strong>ZTA Policy</strong><br/>ALLOW/BLOCK
-      </div>
-      <div class="arrow">→</div>
-      <div class="pipe-box">
-        <span class="icon">📋</span>
-        <strong>Audit Log</strong><br/>audit.jsonl
-      </div>
-    </div>
-  </div>
-
-  <!-- ── LIVE DEMO ─────────────────────────────────────────────────────── -->
-  <div class="grid-2">
-
-    <!-- Scenario buttons -->
-    <div class="card">
-      <h3>Live Prediction — Choose a Scenario</h3>
-      <div style="margin-top:10px;">
-
-        <button class="scenario-btn btn-normal" onclick="predict('normal')">
-          <span style="font-size:1.3rem;">✅</span>
-          <div>
-            <div>Normal HTTP Connection</div>
-            <div class="desc">Employee browsing: tcp/http/SF · 232 bytes src · 8153 bytes dst</div>
-          </div>
-        </button>
-
-        <button class="scenario-btn btn-dos" onclick="predict('dos')">
-          <span style="font-size:1.3rem;">💣</span>
-          <div>
-            <div>DoS Attack — SYN Flood</div>
-            <div class="desc">511 failed connections · S0 flag · 0 bytes · 100% error rate</div>
-          </div>
-        </button>
-
-        <button class="scenario-btn btn-probe" onclick="predict('probe')">
-          <span style="font-size:1.3rem;">🔎</span>
-          <div>
-            <div>Network Probe — Port Scan</div>
-            <div class="desc">229 connections · REJ flag · 100% reject rate · diff services</div>
-          </div>
-        </button>
-
-        <button class="scenario-btn" style="background:#1a0d2e;color:#a78bfa;border:1px solid #7c3aed;" onclick="predict('r2l')">
-          <span style="font-size:1.3rem;">🔐</span>
-          <div>
-            <div>R2L — Brute Force Login</div>
-            <div class="desc">Multiple failed logins · ftp_data · long duration · small src bytes</div>
-          </div>
-        </button>
-
-      </div>
-
-      <div style="margin-top:12px;padding:10px;background:#0d1117;border-radius:6px;font-size:0.75rem;color:#8b949e;">
-        <strong style="color:#C8A84B;">What happens:</strong> Features are sent as JSON to the Flask API →
-        CNN-GRU model scores the connection → ZTA enforcement action returned in real time
-      </div>
-    </div>
-
-    <!-- Result panel -->
-    <div class="card">
-      <h3>ZTA Decision — Real-Time API Response</h3>
-      <div id="spinner" class="spinner" style="margin:20px auto;display:none;"></div>
-      <div id="result-panel" class="result-panel" style="margin-top:10px;">
-        <div style="color:#8b949e;text-align:center;padding-top:50px;font-size:0.85rem;">
-          ← Select a scenario to see a live prediction
+      <!-- Mini bar chart -->
+      <div class="mini-chart" id="mini-chart">
+        <div class="bar-row">
+          <span class="bar-row-label">Normal</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-normal" style="width:0%;background:var(--green)"></div></div>
+          <span class="bar-pct" id="barpct-normal">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Suspicious</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-susp" style="width:0%;background:var(--amber)"></div></div>
+          <span class="bar-pct" id="barpct-susp">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Monitored</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-mon" style="width:0%;background:#60a5fa"></div></div>
+          <span class="bar-pct" id="barpct-mon">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Blocked</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-blocked" style="width:0%;background:var(--red)"></div></div>
+          <span class="bar-pct" id="barpct-blocked">0%</span>
         </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- ── COMPARISON TABLE ───────────────────────────────────────────────── -->
-  <div class="card" style="margin-bottom:18px;">
-    <h3>Four-Way System Comparison</h3>
-    <table style="margin-top:10px;">
-      <thead>
-        <tr>
-          <th>System</th>
-          <th>Accuracy</th>
-          <th>F1 Score</th>
-          <th>False Positive Rate</th>
-          <th>Response Time</th>
-          <th>Lateral Move Blocked</th>
-          <th>Zero-Day Detection</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Legacy VPN (OpenVPN)</td>
-          <td>66.6%</td><td>65.2%</td><td>18.0%</td>
-          <td>Manual (hours)</td>
-          <td><span class="cross">✗ No</span></td>
-          <td><span class="cross">✗ No</span></td>
-        </tr>
-        <tr>
-          <td>ZTA Only</td>
-          <td>76.9%</td><td>76.8%</td><td>10.0%</td>
-          <td>7.5s</td>
-          <td><span class="tick">✓ Yes</span></td>
-          <td><span class="cross">✗ No</span></td>
-        </tr>
-        <tr>
-          <td>ZTA + CNN-GRU (Supervised)</td>
-          <td>81.5%</td><td>81.2%</td><td>3.67%</td>
-          <td>1.8s</td>
-          <td><span class="tick">✓ Yes</span></td>
-          <td><span class="cross">✗ No</span></td>
-        </tr>
-        <tr class="highlight">
-          <td>⭐ ZTA + Autoencoder (Self-Supervised) — Proposed</td>
-          <td>78.2%</td><td>77.9%</td><td>5.0%</td>
-          <td>1.5s</td>
-          <td><span class="tick">✓ Yes</span></td>
-          <td><span class="tick">✓ Yes — UNIQUE</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ── AUDIT LOG ──────────────────────────────────────────────────────── -->
-  <div class="card">
-    <h3>Live Audit Trail — Every Decision Logged</h3>
-    <div id="audit-log" style="margin-top:10px;max-height:160px;overflow-y:auto;">
-      <div style="color:#8b949e;font-size:0.78rem;padding:10px;">
-        Predictions made above will appear here...
+    <!-- Active Segment -->
+    <div class="card">
+      <div class="card-title">Active Segment</div>
+      <div class="segment-box">
+        <div class="segment-title">Last Scenario</div>
+        <div class="segment-name" id="seg-name">—</div>
+        <div class="segment-ips" id="seg-ips">Run a scenario to see segment info</div>
+      </div>
+      <div style="margin-top:12px;font-size:0.65rem;color:var(--muted);line-height:1.6;">
+        <div>🏢 HQ &nbsp;&nbsp;&nbsp;10.10.0.0/24</div>
+        <div>🌿 Branch &nbsp;10.20.0.0/24</div>
+        <div>🛡 DMZ &nbsp;&nbsp;&nbsp;172.16.0.0/24</div>
       </div>
     </div>
   </div>
 
+  <!-- CENTRE COLUMN -->
+  <div class="centre-col">
+
+    <!-- Scenario Buttons -->
+    <div class="scenario-row">
+      <button class="scenario-btn btn-normal" onclick="runScenario('normal')">
+        <span class="btn-icon">👤</span>
+        <span class="btn-title">Normal User Access</span>
+        <span class="btn-sub">Expected: ALLOW<br>Branch 10.20.0.50</span>
+      </button>
+      <button class="scenario-btn btn-dos" onclick="runScenario('dos')">
+        <span class="btn-icon">💥</span>
+        <span class="btn-title">DoS Attack</span>
+        <span class="btn-sub">Expected: BLOCK<br>Internet 203.0.113.10</span>
+      </button>
+      <button class="scenario-btn btn-probe" onclick="runScenario('probe')">
+        <span class="btn-icon">👾</span>
+        <span class="btn-title">Zero-Day Anomaly</span>
+        <span class="btn-sub">Expected: MONITOR/CHALLENGE<br>Branch→DMZ</span>
+      </button>
+      <button class="scenario-btn btn-r2l" onclick="runScenario('r2l')">
+        <span class="btn-icon">🔐</span>
+        <span class="btn-title">Suspicious Access</span>
+        <span class="btn-sub">Expected: CHALLENGE_MFA<br>Remote→ZTA Gateway</span>
+      </button>
+    </div>
+
+    <!-- Detection Results -->
+    <div class="card detection-panel" id="detection-panel">
+      <div class="card-title">Detection Results</div>
+      <div id="detection-idle" class="idle-hint">▶ Click a scenario button to run inference</div>
+      <div id="detection-content" style="display:none">
+        <span class="class-badge" id="class-badge">—</span>
+        <div class="dual-models">
+          <div class="model-box">
+            <div class="model-box-title">CNN-GRU Classifier</div>
+            <div class="model-class" id="cnn-class">—</div>
+            <div class="conf-label">Confidence</div>
+            <div class="conf-track"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
+            <div class="conf-pct" id="conf-pct">—</div>
+          </div>
+          <div class="model-box">
+            <div class="model-box-title">Autoencoder Anomaly</div>
+            <div class="ae-row">
+              <span class="ae-label">Recon Error</span>
+              <span class="ae-val" id="ae-error">—</span>
+            </div>
+            <div class="ae-row">
+              <span class="ae-label">Threshold</span>
+              <span class="ae-val" id="ae-thresh">—</span>
+            </div>
+            <div class="ae-row">
+              <span class="ae-label">Anomaly Flag</span>
+              <span class="ae-val" id="ae-flag">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="card">
+      <div class="card-title">Risk Assessment</div>
+      <div id="risk-idle" class="idle-hint">Waiting for inference…</div>
+      <div id="risk-content" style="display:none">
+        <div class="risk-bars">
+          <div class="risk-row">
+            <div class="risk-row-header">
+              <span class="risk-row-label">CNN Risk</span>
+              <span class="risk-row-val" id="cnn-risk-val">—</span>
+            </div>
+            <div class="risk-track"><div class="risk-fill" id="cnn-risk-bar" style="width:0%"></div></div>
+          </div>
+          <div class="risk-row">
+            <div class="risk-row-header">
+              <span class="risk-row-label">Autoencoder Risk</span>
+              <span class="risk-row-val" id="ae-risk-val">—</span>
+            </div>
+            <div class="risk-track"><div class="risk-fill" id="ae-risk-bar" style="width:0%"></div></div>
+          </div>
+          <div class="risk-row">
+            <div class="risk-row-header">
+              <span class="risk-row-label">Combined Risk</span>
+              <span class="risk-row-val" id="comb-risk-val">—</span>
+            </div>
+            <div class="risk-track"><div class="risk-fill" id="comb-risk-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="combined-risk-display">
+          <div class="combined-risk-num" id="big-risk">—</div>
+          <div class="combined-risk-label" id="risk-level">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZTA Policy Decision -->
+    <div class="card decision-panel">
+      <div class="card-title">ZTA Policy Decision</div>
+      <div class="decision-badge dec-idle" id="decision-badge">AWAITING INPUT</div>
+      <div class="justification" id="justification">Run a scenario to see the policy decision.</div>
+      <div class="session-counts">
+        <div class="sess-count">
+          <div class="sess-count-num" id="sc-allow" style="color:var(--green)">0</div>
+          <div class="sess-count-label">ALLOW</div>
+        </div>
+        <div class="sess-count">
+          <div class="sess-count-num" id="sc-monitor" style="color:var(--amber)">0</div>
+          <div class="sess-count-label">MONITOR</div>
+        </div>
+        <div class="sess-count">
+          <div class="sess-count-num" id="sc-challenge" style="color:var(--orange)">0</div>
+          <div class="sess-count-label">CHALLENGE</div>
+        </div>
+        <div class="sess-count">
+          <div class="sess-count-num" id="sc-block" style="color:var(--red)">0</div>
+          <div class="sess-count-label">BLOCK</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /centre-col -->
+
+  <!-- RIGHT PANEL — Audit Log -->
+  <div class="right-panel">
+    <div class="card audit-log-wrap" style="height:100%">
+      <div class="card-title">
+        Audit Log
+        <button class="export-btn" onclick="exportLog()">Export JSON</button>
+      </div>
+      <div class="audit-scroll" id="audit-scroll">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Source IP</th>
+              <th>Type</th>
+              <th>CNN</th>
+              <th>AE</th>
+              <th>Comb</th>
+              <th>Decision</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-grid -->
+
+<!-- GNS3 Topology -->
+<div class="topology-section">
+  <div class="topology-title">
+    🌐 GNS3 Hybrid Network Topology — 10.10.0.0/24 | 10.20.0.0/24 | 172.16.0.0/24
+  </div>
+  <div class="topology-wrap">
+    <svg class="topo-svg" viewBox="0 0 1000 220" xmlns="http://www.w3.org/2000/svg" id="topo-svg">
+      <!-- Background -->
+      <rect width="1000" height="220" fill="#111827"/>
+
+      <!-- Connection lines (default grey) -->
+      <!-- Internet → ZTA Gateway -->
+      <line id="line-inet-zta" x1="118" y1="100" x2="262" y2="100" stroke="#1e2d45" stroke-width="2" stroke-dasharray="5,3"/>
+      <!-- ZTA Gateway → Zeek Tap -->
+      <line id="line-zta-zeek" x1="338" y1="100" x2="418" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <!-- Zeek Tap → Branch PC -->
+      <line id="line-zeek-branch" x1="494" y1="100" x2="590" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <!-- ZTA Gateway → HQ Server (via top path) -->
+      <line id="line-zta-hq" x1="300" y1="80" x2="700" y2="80" stroke="#1e2d45" stroke-width="2" stroke-dasharray="4,2"/>
+      <!-- Branch PC → HQ Server -->
+      <line id="line-branch-hq" x1="638" y1="100" x2="690" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <!-- HQ Server → DMZ Server -->
+      <line id="line-hq-dmz" x1="770" y1="100" x2="860" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <!-- Branch PC → DMZ (diagonal for probe) -->
+      <line id="line-branch-dmz" x1="635" y1="115" x2="855" y2="115" stroke="#1e2d45" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+
+      <!-- Internet / Attacker node -->
+      <circle cx="80" cy="100" r="38" fill="#1a0505" stroke="#ff4444" stroke-width="2"/>
+      <text x="80" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#ff4444">🌐</text>
+      <text x="80" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ff4444" font-weight="600">Internet</text>
+      <text x="80" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#994444">203.0.113.10</text>
+
+      <!-- ZTA Gateway node -->
+      <rect x="263" y="70" width="74" height="60" rx="8" fill="#000d2e" stroke="#003087" stroke-width="2.5"/>
+      <text x="300" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#4488ff">🔐</text>
+      <text x="300" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#60a5fa" font-weight="700">ZTA Gateway</text>
+      <text x="300" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">Flask :5000</text>
+
+      <!-- Zeek Tap -->
+      <rect x="419" y="82" width="74" height="36" rx="6" fill="#0d1420" stroke="#ffaa00" stroke-width="1.5"/>
+      <text x="456" y="98" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#ffaa00" font-weight="600">🔍 Zeek Tap</text>
+      <text x="456" y="109" text-anchor="middle" font-family="Inter,sans-serif" font-size="7" fill="#886600">Traffic Mirror</text>
+
+      <!-- Branch PC node -->
+      <circle cx="614" cy="100" r="38" fill="#001a0d" stroke="#00cc60" stroke-width="2"/>
+      <text x="614" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#00ff88">💻</text>
+      <text x="614" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#00cc60" font-weight="600">Branch PC</text>
+      <text x="614" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#006633">10.20.0.50</text>
+
+      <!-- HQ Server node -->
+      <circle cx="730" cy="100" r="38" fill="#000d2e" stroke="#003087" stroke-width="2"/>
+      <text x="730" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#4488ff">🖥</text>
+      <text x="730" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#60a5fa" font-weight="600">HQ Server</text>
+      <text x="730" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">10.10.0.10</text>
+
+      <!-- DMZ Server node -->
+      <circle cx="900" cy="100" r="38" fill="#1a0d00" stroke="#ff6600" stroke-width="2"/>
+      <text x="900" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#ff9933">🛡</text>
+      <text x="900" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ff6600" font-weight="600">DMZ Server</text>
+      <text x="900" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#994400">172.16.0.10</text>
+
+      <!-- Subnet labels -->
+      <text x="300" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">ZTA Policy Engine</text>
+      <text x="456" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#886600">Passive Mirror</text>
+      <text x="614" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#006633">10.20.0.0/24 (Branch)</text>
+      <text x="730" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">10.10.0.0/24 (HQ)</text>
+      <text x="900" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#994400">172.16.0.0/24 (DMZ)</text>
+
+      <!-- Animated packet (hidden by default) -->
+      <circle id="topo-packet" r="6" fill="var(--green)" opacity="0" cx="80" cy="100">
+        <animateMotion id="pkt-anim" dur="2s" begin="indefinite" fill="freeze" repeatCount="1">
+          <mpath id="pkt-mpath" href="#path-normal"/>
+        </animateMotion>
+      </circle>
+
+      <!-- Packet paths (invisible guides) -->
+      <path id="path-normal" d="M 80,100 L 263,100 L 338,100 L 419,100 L 494,100 L 576,100 L 692,100 L 730,100" fill="none"/>
+      <path id="path-dos"    d="M 80,100 L 263,100 L 300,100" fill="none"/>
+      <path id="path-probe"  d="M 80,100 L 263,100 L 338,100 L 419,100 L 494,100 L 576,100 L 635,115 L 862,115" fill="none"/>
+      <path id="path-r2l"    d="M 80,100 L 263,100 L 300,100" fill="none"/>
+      <path id="path-u2r"    d="M 614,100 L 692,100 L 730,100" fill="none"/>
+    </svg>
+  </div>
 </div>
 
-<div class="footer">
-  Risk-Adaptive ZTA Framework &nbsp;|&nbsp; Okado Aaron Obbo S24B23/015 &nbsp;|&nbsp;
-  Uganda Christian University &nbsp;|&nbsp; github.com/asdcaaron/zta-ml-framework
-</div>
-
-<!-- ── JAVASCRIPT ──────────────────────────────────────────────────────────── -->
 <script>
-const API = 'http://127.0.0.1:5000';
-let logCount = 0;
+  // ── Config ────────────────────────────────────────────────────────────────
+  const API = 'http://localhost:5000';
+  let auditLog = [];
+  let sessionCounts = { total: 0, normal: 0, suspicious: 0, blocked: 0 };
+  let decisionCounts = { ALLOW: 0, MONITOR: 0, CHALLENGE_MFA: 0, BLOCK: 0 };
+  let _aeThresholdGlobal = null;
 
-const SCENARIOS = {
-  normal: {
-    label: 'Normal HTTP',
-    features: {
-      duration:0, protocol_type:'tcp', service:'http', flag:'SF',
-      src_bytes:232, dst_bytes:8153, count:8, srv_count:8,
-      same_srv_rate:1.0, serror_rate:0.0, rerror_rate:0.0,
-      diff_srv_rate:0.0, srv_diff_host_rate:0.0
-    }
-  },
-  dos: {
-    label: 'DoS SYN Flood',
-    features: {
-      duration:0, protocol_type:'tcp', service:'private', flag:'S0',
-      src_bytes:0, dst_bytes:0, count:511, srv_count:511,
-      serror_rate:1.0, srv_serror_rate:1.0, same_srv_rate:1.0,
-      diff_srv_rate:0.0, rerror_rate:0.0
-    }
-  },
-  probe: {
-    label: 'Port Scan Probe',
-    features: {
-      duration:0, protocol_type:'tcp', service:'private', flag:'REJ',
-      src_bytes:0, dst_bytes:0, count:229, srv_count:20,
-      rerror_rate:1.0, srv_rerror_rate:1.0, diff_srv_rate:0.06,
-      same_srv_rate:0.09, serror_rate:0.0
-    }
-  },
-  r2l: {
-    label: 'R2L Brute Force',
-    features: {
-      duration:299, protocol_type:'tcp', service:'ftp_data', flag:'SF',
-      src_bytes:28, dst_bytes:0, count:1, srv_count:1,
-      num_failed_logins:5, logged_in:0, same_srv_rate:1.0,
-      serror_rate:0.0, rerror_rate:0.0, diff_srv_rate:0.0
-    }
-  }
-};
-
-async function predict(scenario) {
-  const s = SCENARIOS[scenario];
-  const spinner = document.getElementById('spinner');
-  const panel   = document.getElementById('result-panel');
-
-  spinner.style.display = 'block';
-  panel.innerHTML = '';
-  panel.className = 'result-panel';
-
-  try {
-    const resp = await fetch(API + '/predict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ features: s.features })
+  // ── Live Clock ────────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('live-clock').textContent = `${hh}:${mm}:${ss}`;
+    document.getElementById('live-date').textContent = now.toLocaleDateString('en-GB', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
-    const data = await resp.json();
-    spinner.style.display = 'none';
-    renderResult(data, s.label);
-    addAuditEntry(data, s.label);
-  } catch(e) {
-    spinner.style.display = 'none';
-    panel.innerHTML = `<div style="color:#f85149;padding:20px;">
-      ❌ Cannot reach API at ${API}<br/>
-      <small>Make sure: python src/api.py is running in the project folder</small>
-    </div>`;
   }
-}
+  updateClock();
+  setInterval(updateClock, 1000);
 
-function renderResult(data, label) {
-  const panel  = document.getElementById('result-panel');
-  const action = data.action;
-  const risk   = data.risk_score;
-  const probs  = data.probabilities || {};
-  const classes = ['Normal','DoS','Probe','R2L','U2R'];
+  // ── Health Check ──────────────────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(4000) });
+      const data = await res.json();
 
-  panel.className = `result-panel action-${action}`;
+      setDot('dot-api', 'green');  setTxt('txt-api', 'Online');
+      setDot('dot-cnn', data.model_loaded    ? 'green' : 'red');
+      setTxt('txt-cnn', data.model_loaded    ? 'Loaded' : 'Not Loaded');
+      setDot('dot-ae',  data.ae_model_loaded ? 'green' : 'red');
+      setTxt('txt-ae',  data.ae_model_loaded ? 'Loaded' : 'Not Loaded');
 
-  const actionColour = {
-    ALLOW:'#2ecc71', MONITOR:'#f39c12',
-    CHALLENGE_MFA:'#e67e22', BLOCK:'#e74c3c'
-  }[action] || '#fff';
+      document.getElementById('offline-banner').classList.remove('visible');
+    } catch (e) {
+      setDot('dot-api', 'red'); setTxt('txt-api', 'Offline');
+      setDot('dot-cnn', 'red'); setTxt('txt-cnn', '—');
+      setDot('dot-ae',  'red'); setTxt('txt-ae',  '—');
+      document.getElementById('offline-banner').classList.add('visible');
+    }
+  }
 
-  const probBars = classes.map(cls => {
-    const pct = ((probs[cls] || 0) * 100).toFixed(1);
-    return `
-      <div class="prob-row">
-        <span class="cls">${cls}</span>
-        <div class="bar-w"><div class="bar-f" style="width:${pct}%;background:${cls===data.classification?'#C8A84B':'#003087'}"></div></div>
-        <span class="pct">${pct}%</span>
-      </div>`;
-  }).join('');
+  function setDot(id, cls) {
+    const el = document.getElementById(id);
+    el.className = 'pill-dot ' + cls;
+  }
+  function setTxt(id, txt) {
+    document.getElementById(id).textContent = txt;
+  }
 
-  panel.innerHTML = `
-    <div>
-      <span class="action-badge badge-${action}">${action.replace('_',' ')}</span>
-      <span style="font-size:0.8rem;color:#8b949e;margin-left:10px;">← ZTA enforcement action</span>
-    </div>
+  // ── Restore session from API ───────────────────────────────────────────────
+  async function restoreSession() {
+    try {
+      const [statsRes, logRes] = await Promise.all([
+        fetch(`${API}/demo/stats`),
+        fetch(`${API}/demo/log`)
+      ]);
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        decisionCounts.ALLOW        = stats.by_decision?.ALLOW        || 0;
+        decisionCounts.MONITOR      = stats.by_decision?.MONITOR      || 0;
+        decisionCounts.CHALLENGE_MFA= stats.by_decision?.CHALLENGE_MFA|| 0;
+        decisionCounts.BLOCK        = stats.by_decision?.BLOCK        || 0;
+        sessionCounts.total   = stats.total || 0;
+        sessionCounts.normal  = (stats.by_class?.Normal || 0);
+        sessionCounts.suspicious = sessionCounts.total - sessionCounts.normal;
+        sessionCounts.blocked = decisionCounts.BLOCK;
+        updateCounters();
+        updateDecisionCounts();
+      }
+      if (logRes.ok) {
+        const entries = await logRes.json();
+        entries.forEach(e => {
+          auditLog.push(e);
+          addAuditRow(e);
+        });
+      }
+    } catch (e) { /* silent */ }
+  }
 
-    <div style="font-size:0.8rem;margin:6px 0;color:#8b949e;">
-      Risk Score: <strong style="color:${actionColour}">${risk}</strong>
-    </div>
-    <div class="risk-bar-wrap">
-      <div class="risk-bar" style="width:${(risk*100).toFixed(0)}%"></div>
-    </div>
+  // ── Scenario runner ───────────────────────────────────────────────────────
+  async function runScenario(scenarioName) {
+    // Show loading state
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.add('loading-btn'));
 
-    <div class="result-grid">
-      <div class="result-item">
-        <div class="val">${risk}</div>
-        <div class="lbl">Risk Score</div>
-      </div>
-      <div class="result-item">
-        <div class="val" style="font-size:0.85rem;">${data.classification}</div>
-        <div class="lbl">Classification</div>
-      </div>
-      <div class="result-item">
-        <div class="val">${(data.confidence*100).toFixed(1)}%</div>
-        <div class="lbl">Confidence</div>
-      </div>
-      <div class="result-item">
-        <div class="val">${data.latency_ms ? data.latency_ms.toFixed(0) : '—'}ms</div>
-        <div class="lbl">Latency</div>
-      </div>
-    </div>
+    try {
+      const res = await fetch(`${API}/demo/scenario/${scenarioName}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(`Error ${res.status}: ${err.error || res.statusText}`);
+        return;
+      }
+      const data = await res.json();
+      updateAllPanels(data, scenarioName);
+    } catch (e) {
+      alert(`Could not reach API at ${API}.\nMake sure python src/api.py is running.`);
+    } finally {
+      document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('loading-btn'));
+    }
+  }
 
-    <div style="margin-top:12px;">
-      <div style="font-size:0.72rem;color:#8b949e;margin-bottom:4px;">CLASS PROBABILITIES</div>
-      ${probBars}
-    </div>`;
-}
+  // ── Update all panels ─────────────────────────────────────────────────────
+  function updateAllPanels(data, scenarioName) {
+    updateDetection(data);
+    updateRisk(data);
+    updateDecision(data);
+    updateSegment(data);
+    updateSessionCounters(data);
+    addAuditEntry(data);
+    animatePacket(scenarioName, data.zta_decision);
+  }
 
-function addAuditEntry(data, label) {
-  logCount++;
-  const log  = document.getElementById('audit-log');
-  const now  = new Date().toLocaleTimeString();
-  const div  = document.createElement('div');
-  div.className = 'log-entry';
-  div.innerHTML = `
-    <span class="log-ts">${now}</span>
-    <span class="log-action log-${data.action}">${data.action.replace('_',' ')}</span>
-    <span style="color:#e6edf3;">${label}</span>
-    <span style="color:#8b949e;margin-left:auto;">
-      risk=${data.risk_score} &nbsp; class=${data.classification} &nbsp; conf=${(data.confidence*100).toFixed(0)}%
-    </span>`;
-  log.insertBefore(div, log.firstChild);
+  // Detection Results
+  function updateDetection(data) {
+    const panel = document.getElementById('detection-panel');
+    document.getElementById('detection-idle').style.display = 'none';
+    document.getElementById('detection-content').style.display = 'block';
+    panel.classList.remove('slide-in');
+    void panel.offsetWidth;
+    panel.classList.add('slide-in');
 
-  // Remove placeholder
-  const placeholder = log.querySelector('div[style]');
-  if (placeholder && logCount === 1) placeholder.remove();
-}
+    const cls = data.traffic_class_label || data.classification || 'Unknown';
+    const badge = document.getElementById('class-badge');
+    badge.textContent = cls;
+    badge.className = 'class-badge ' + badgeClass(cls);
+
+    document.getElementById('cnn-class').textContent = data.classification || '—';
+    document.getElementById('cnn-class').style.color = classColor(data.classification);
+
+    const conf = Math.round((data.confidence || 0) * 100);
+    document.getElementById('conf-fill').style.width = conf + '%';
+    document.getElementById('conf-pct').textContent = conf + '%';
+
+    document.getElementById('ae-error').textContent =
+      data.ae_reconstruction_error !== undefined
+        ? data.ae_reconstruction_error.toFixed(6)
+        : '—';
+
+    // Try to get threshold from model/info if not cached
+    if (_aeThresholdGlobal) {
+      document.getElementById('ae-thresh').textContent = _aeThresholdGlobal.toFixed(6);
+    } else {
+      fetch(`${API}/model/info`).then(r => r.json()).then(d => {
+        if (d.ae_threshold) {
+          _aeThresholdGlobal = d.ae_threshold;
+          document.getElementById('ae-thresh').textContent = d.ae_threshold.toFixed(6);
+        }
+      }).catch(() => {});
+    }
+
+    const anomaly = data.ae_is_anomaly;
+    const flagEl = document.getElementById('ae-flag');
+    flagEl.textContent = anomaly ? 'YES' : 'NO';
+    flagEl.className = 'ae-val ' + (anomaly ? 'anomaly-yes' : 'anomaly-no');
+  }
+
+  // Risk Assessment
+  function updateRisk(data) {
+    document.getElementById('risk-idle').style.display = 'none';
+    document.getElementById('risk-content').style.display = 'block';
+
+    const cnn  = data.cnn_risk     || 0;
+    const ae   = data.ae_risk      || 0;
+    const comb = data.combined_risk || data.risk_score || 0;
+
+    setRiskBar('cnn-risk-bar',  'cnn-risk-val',  cnn);
+    setRiskBar('ae-risk-bar',   'ae-risk-val',   ae);
+    setRiskBar('comb-risk-bar', 'comb-risk-val', comb);
+
+    const bigRisk = document.getElementById('big-risk');
+    bigRisk.textContent = comb.toFixed(3);
+    bigRisk.style.color = riskColor(comb);
+
+    const lvlEl = document.getElementById('risk-level');
+    const lvl = riskLevel(comb);
+    lvlEl.textContent = lvl;
+    lvlEl.style.color = riskColor(comb);
+  }
+
+  function setRiskBar(barId, valId, risk) {
+    const bar = document.getElementById(barId);
+    bar.style.width = Math.min(100, risk * 100) + '%';
+    bar.className = 'risk-fill ' + riskFillClass(risk);
+    document.getElementById(valId).textContent = risk.toFixed(3);
+    document.getElementById(valId).style.color = riskColor(risk);
+  }
+
+  function riskFillClass(r) {
+    if (r < 0.3)  return 'rf-low';
+    if (r < 0.5)  return 'rf-elevated';
+    if (r < 0.8)  return 'rf-high';
+    return 'rf-critical';
+  }
+
+  function riskColor(r) {
+    if (r < 0.3)  return 'var(--green)';
+    if (r < 0.5)  return 'var(--amber)';
+    if (r < 0.8)  return 'var(--orange)';
+    return 'var(--red)';
+  }
+
+  function riskLevel(r) {
+    if (r < 0.3)  return 'LOW';
+    if (r < 0.5)  return 'ELEVATED';
+    if (r < 0.8)  return 'HIGH';
+    return 'CRITICAL';
+  }
+
+  // ZTA Decision
+  function updateDecision(data) {
+    const badge = document.getElementById('decision-badge');
+    const d = data.zta_decision || data.action;
+    badge.textContent = d;
+    badge.className = 'decision-badge ' + decisionClass(d);
+    badge.classList.remove('pulsing');
+    void badge.offsetWidth;
+    badge.classList.add('pulsing');
+
+    document.getElementById('justification').textContent = getJustification(data);
+  }
+
+  function decisionClass(d) {
+    if (d === 'ALLOW')         return 'dec-allow';
+    if (d === 'MONITOR')       return 'dec-monitor';
+    if (d === 'CHALLENGE_MFA') return 'dec-challenge';
+    if (d === 'BLOCK')         return 'dec-block';
+    return 'dec-idle';
+  }
+
+  function getJustification(data) {
+    const d = data.zta_decision || data.action;
+    if (d === 'ALLOW')         return 'Low risk — normal traffic pattern detected. Access granted.';
+    if (d === 'MONITOR')       return 'Anomalous pattern detected by autoencoder. Session under surveillance.';
+    if (d === 'CHALLENGE_MFA') return 'Elevated risk — suspicious access pattern. MFA re-authentication required.';
+    if (d === 'BLOCK')         return 'High-confidence attack detected. Session terminated and logged.';
+    return '';
+  }
+
+  // Segment
+  function updateSegment(data) {
+    document.getElementById('seg-name').textContent = data.segment || '—';
+    document.getElementById('seg-ips').textContent =
+      (data.source_ip || '?') + ' → ' + (data.dest_ip || '?');
+  }
+
+  // Session counters
+  function updateSessionCounters(data) {
+    const cls = data.traffic_class_label || data.classification;
+    const dec = data.zta_decision || data.action;
+
+    sessionCounts.total++;
+    if (cls === 'Normal') sessionCounts.normal++;
+    else                  sessionCounts.suspicious++;
+    if (dec === 'BLOCK')  sessionCounts.blocked++;
+
+    decisionCounts[dec] = (decisionCounts[dec] || 0) + 1;
+
+    updateCounters();
+    updateDecisionCounts();
+  }
+
+  function updateCounters() {
+    document.getElementById('cnt-total').textContent   = sessionCounts.total;
+    document.getElementById('cnt-normal').textContent  = sessionCounts.normal;
+    document.getElementById('cnt-susp').textContent    = sessionCounts.suspicious;
+    document.getElementById('cnt-blocked').textContent = sessionCounts.blocked;
+    updateBars();
+  }
+
+  function updateBars() {
+    const t = sessionCounts.total || 1;
+    const decs = decisionCounts;
+    const allow     = decs.ALLOW || 0;
+    const monitored = decs.MONITOR || 0;
+    const susp      = (decs.CHALLENGE_MFA || 0) + monitored;
+    const blocked   = decs.BLOCK || 0;
+
+    setBar('bar-normal',  'barpct-normal',  allow,     t);
+    setBar('bar-susp',    'barpct-susp',    susp,      t);
+    setBar('bar-mon',     'barpct-mon',     monitored, t);
+    setBar('bar-blocked', 'barpct-blocked', blocked,   t);
+  }
+
+  function setBar(barId, pctId, count, total) {
+    const pct = total > 0 ? Math.round(count / total * 100) : 0;
+    document.getElementById(barId).style.width = pct + '%';
+    document.getElementById(pctId).textContent = pct + '%';
+  }
+
+  function updateDecisionCounts() {
+    document.getElementById('sc-allow').textContent     = decisionCounts.ALLOW || 0;
+    document.getElementById('sc-monitor').textContent   = decisionCounts.MONITOR || 0;
+    document.getElementById('sc-challenge').textContent = decisionCounts.CHALLENGE_MFA || 0;
+    document.getElementById('sc-block').textContent     = decisionCounts.BLOCK || 0;
+  }
+
+  // ── Audit Log ─────────────────────────────────────────────────────────────
+  function addAuditEntry(data) {
+    const entry = {
+      timestamp:         new Date().toISOString(),
+      scenario:          data.scenario || '—',
+      source_ip:         data.source_ip || '—',
+      traffic_class_label: data.traffic_class_label || data.classification || '—',
+      cnn_risk:          data.cnn_risk,
+      ae_risk:           data.ae_risk,
+      combined_risk:     data.combined_risk || data.risk_score,
+      zta_decision:      data.zta_decision || data.action,
+    };
+    auditLog.push(entry);
+    if (auditLog.length > 100) auditLog.shift();
+    addAuditRow(entry);
+  }
+
+  function addAuditRow(entry) {
+    const tbody = document.getElementById('audit-tbody');
+    const tr = document.createElement('tr');
+    const dec = entry.zta_decision || '';
+    tr.className = 'audit-row-' + decRowClass(dec);
+    const time = new Date(entry.timestamp).toLocaleTimeString('en-GB');
+    tr.innerHTML = `
+      <td>${time}</td>
+      <td>${entry.source_ip || '—'}</td>
+      <td>${entry.traffic_class_label || '—'}</td>
+      <td>${(entry.cnn_risk !== undefined ? entry.cnn_risk.toFixed(3) : '—')}</td>
+      <td>${(entry.ae_risk  !== undefined ? entry.ae_risk.toFixed(3)  : '—')}</td>
+      <td>${(entry.combined_risk !== undefined ? entry.combined_risk.toFixed(3) : '—')}</td>
+      <td>${dec}</td>
+    `;
+    tbody.insertBefore(tr, tbody.firstChild);
+    // Trim to 100 rows
+    while (tbody.children.length > 100) tbody.removeChild(tbody.lastChild);
+  }
+
+  function decRowClass(d) {
+    if (d === 'ALLOW')         return 'allow';
+    if (d === 'MONITOR')       return 'monitor';
+    if (d === 'CHALLENGE_MFA') return 'challenge';
+    if (d === 'BLOCK')         return 'block';
+    return 'allow';
+  }
+
+  function exportLog() {
+    const blob = new Blob([JSON.stringify(auditLog, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'zta_audit_log.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Topology Packet Animation ─────────────────────────────────────────────
+  const SCENARIO_PATHS = {
+    normal: { pathId: 'path-normal', lines: ['line-zta-zeek','line-zeek-branch','line-branch-hq'] },
+    dos:    { pathId: 'path-dos',    lines: ['line-inet-zta'] },
+    probe:  { pathId: 'path-probe',  lines: ['line-zta-zeek','line-zeek-branch','line-branch-dmz'] },
+    r2l:    { pathId: 'path-r2l',    lines: ['line-inet-zta'] },
+    u2r:    { pathId: 'path-normal', lines: ['line-branch-hq'] },
+  };
+
+  const DECISION_COLORS = {
+    ALLOW:         '#00ff88',
+    MONITOR:       '#ffaa00',
+    CHALLENGE_MFA: '#ff6600',
+    BLOCK:         '#ff4444',
+  };
+
+  function animatePacket(scenarioName, decision) {
+    const cfg = SCENARIO_PATHS[scenarioName];
+    if (!cfg) return;
+
+    const pkt   = document.getElementById('topo-packet');
+    const color = DECISION_COLORS[decision] || '#60a5fa';
+
+    // Update active line colors
+    // Reset all lines
+    ['line-inet-zta','line-zta-zeek','line-zeek-branch','line-branch-hq',
+     'line-hq-dmz','line-zta-hq','line-branch-dmz'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.setAttribute('stroke', '#1e2d45');
+        el.setAttribute('stroke-width', '2');
+      }
+    });
+    // Highlight active lines
+    cfg.lines.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.setAttribute('stroke', color);
+        el.setAttribute('stroke-width', '3');
+        el.setAttribute('stroke-dasharray', 'none');
+      }
+    });
+
+    // Update mpath href to point to correct path
+    const mpath = document.getElementById('pkt-mpath');
+    mpath.setAttribute('href', '#' + cfg.pathId);
+
+    // Reset and restart animation
+    pkt.setAttribute('fill', color);
+    pkt.setAttribute('opacity', '1');
+
+    const anim = document.getElementById('pkt-anim');
+    anim.setAttribute('dur', '2s');
+    anim.beginElement();
+
+    // Fade out after 2.6s
+    setTimeout(() => { pkt.setAttribute('opacity', '0'); }, 2600);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function badgeClass(cls) {
+    const m = { Normal:'badge-normal', DoS:'badge-dos', Probe:'badge-probe',
+                R2L:'badge-r2l', U2R:'badge-u2r' };
+    return m[cls] || 'badge-normal';
+  }
+
+  function classColor(cls) {
+    const m = { Normal:'var(--green)', DoS:'var(--red)', Probe:'var(--amber)',
+                R2L:'var(--orange)', U2R:'var(--purple)' };
+    return m[cls] || 'var(--text)';
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  checkHealth();
+  restoreSession();
+  // Re-check health every 30 seconds
+  setInterval(checkHealth, 30000);
 </script>
 </body>
 </html>
