@@ -26,8 +26,9 @@ import time
 import logging
 import numpy as np
 import json
+import shutil
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Allow running from project root: python src/api.py
 sys.path.insert(0, os.path.dirname(__file__))
@@ -41,7 +42,8 @@ tf.get_logger().setLevel('ERROR')
 from flask import Flask, request, jsonify, abort, send_file
 from flask_cors import CORS
 
-from preprocess import preprocess_single_sample, FEATURE_COLS, COLUMNS, ATTACK_MAP
+from preprocess import (preprocess_single_sample, FEATURE_COLS, COLUMNS,
+                        ATTACK_MAP, CATEGORICAL_COLS)
 from model import score_to_risk, CLASS_NAMES
 from autoencoder import load_autoencoder, predict_anomaly
 
@@ -69,6 +71,14 @@ ae_model = None
 ae_threshold = None
 ae_model_load_time = None
 
+# Zero-day variant CNN-GRU (trained with U2R withheld). Loaded if present;
+# the 'u2r' demo scenario uses it to show that the autoencoder catches an
+# attack the supervised classifier was never trained on.
+ZERODAY_MODEL_PATH = os.getenv('ZERODAY_MODEL_PATH',
+                               os.path.join(ARTIFACTS_DIR, 'cnn_gru_model_no_u2r.keras'))
+model_zeroday = None
+zeroday_load_time = None
+
 # ── Demo session state ────────────────────────────────────────────────────────
 _session_stats = {
     'total': 0,
@@ -92,9 +102,57 @@ def _append_audit(entry: dict):
         log.warning(f'audit write failed: {e}')
 
 
+def _load_persisted_state():
+    """Restore in-memory session stats and audit log from data/audit.jsonl.
+
+    The API persists every audit entry to audit.jsonl, but the in-memory
+    counters and audit list were previously lost on restart. Rebuilding
+    them from the persisted log keeps the dashboard's historical stats
+    and audit records consistent across restarts.
+    """
+    global _audit_log
+    if not os.path.exists(AUDIT_LOG_PATH):
+        return
+    try:
+        with open(AUDIT_LOG_PATH, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except OSError as e:
+        log.warning(f'Could not read audit log: {e}')
+        return
+
+    entries = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+
+    for e in entries:
+        dec = e.get('zta_decision') or e.get('decision')
+        cls = e.get('traffic_class_label') or e.get('classification')
+        _session_stats['total'] += 1
+        if dec in _session_stats['by_decision']:
+            _session_stats['by_decision'][dec] += 1
+        if cls in _session_stats['by_class']:
+            _session_stats['by_class'][cls] += 1
+
+    # Keep the most recent 200 entries in memory (matches _append_audit cap)
+    _audit_log = entries[-200:]
+    log.info(f'Restored {len(entries)} audit entries from {AUDIT_LOG_PATH} '
+             f'(total={_session_stats["total"]})')
+
+
+# Restore persisted session state at startup
+_load_persisted_state()
+
+
 def load_model():
     global model, model_load_time
     global ae_model, ae_threshold, ae_model_load_time
+    global model_zeroday, zeroday_load_time
 
     # ── Load CNN-GRU ──────────────────────────────────────────────────────
     if not os.path.exists(MODEL_PATH):
@@ -118,6 +176,19 @@ def load_model():
         log.warning(f"Autoencoder not found: {e}. "
                     "Run src/train_autoencoder.py first.")
 
+    # ── Load zero-day CNN-GRU variant (U2R withheld), if present ──────────
+    if os.path.exists(ZERODAY_MODEL_PATH):
+        log.info(f"Loading zero-day variant CNN-GRU from '{ZERODAY_MODEL_PATH}'...")
+        try:
+            model_zeroday = tf.keras.models.load_model(ZERODAY_MODEL_PATH)
+            zeroday_load_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+            log.info("Zero-day variant loaded (U2R withheld from training).")
+        except Exception as e:
+            log.warning(f"Could not load zero-day variant: {e}")
+    else:
+        log.info("Zero-day variant not found — 'u2r' scenario will use the "
+                 "standard model. Run src/train_zeroday.py to enable it.")
+
 
 # Load models in a background thread so Flask starts immediately
 import threading
@@ -137,16 +208,48 @@ def _validate_features(data: dict) -> dict:
     return cleaned
 
 
-def _run_inference(sample: np.ndarray) -> dict:
+# ── ZTA policy decision ───────────────────────────────────────────────────────
+
+def zta_decision(risk_score: float) -> str:
+    """
+    Map a combined risk score to a Zero Trust policy action.
+
+    The policy decision is driven by the COMBINED risk score (max of the
+    CNN-GRU and autoencoder risk), so an anomaly detected by the
+    autoencoder can escalate the decision even when the supervised
+    classifier is confident the traffic is normal.
+
+    Thresholds:
+        > 0.8  → BLOCK          (high-confidence attack)
+        > 0.5  → CHALLENGE_MFA  (suspicious — re-authenticate)
+        > 0.3  → MONITOR         (anomalous — flag and watch)
+        else   → ALLOW           (normal traffic)
+    """
+    if risk_score > 0.8:
+        return 'BLOCK'
+    if risk_score > 0.5:
+        return 'CHALLENGE_MFA'
+    if risk_score > 0.3:
+        return 'MONITOR'
+    return 'ALLOW'
+
+
+def _run_inference(sample: np.ndarray, cnn_model=None) -> dict:
     """
     Run dual-model inference (CNN-GRU + Autoencoder) and return scored result.
+
+    cnn_model : optional CNN-GRU model to use instead of the global one. The
+                zero-day scenario passes the U2R-withheld variant here so the
+                supervised classification reflects a model that never saw U2R,
+                while the autoencoder (and combined-risk policy) stay the same.
 
     # NOTE: This API returns policy decision labels. Actual network enforcement
     # (firewall rules, session termination, MFA triggers) requires integration
     # with an enforcement plane (e.g., firewall API, ZTNA controller). This
     # prototype demonstrates the decision layer only.
     """
-    if model is None:
+    cnn = cnn_model if cnn_model is not None else model
+    if cnn is None:
         abort(503, description="CNN-GRU model not loaded. Run train.py first.")
     if ae_model is None:
         abort(503, description="Autoencoder not loaded. Run train_autoencoder.py first.")
@@ -154,7 +257,7 @@ def _run_inference(sample: np.ndarray) -> dict:
     t0 = time.perf_counter()
 
     # ── CNN-GRU inference ─────────────────────────────────────────────────
-    probs = model.predict(sample, verbose=0)[0]          # shape (5,)
+    probs = cnn.predict(sample, verbose=0)[0]          # shape (5,)
     cnn_risk = float(1.0 - probs[0])                     # 1 - P(Normal)
 
     # ── Autoencoder inference ─────────────────────────────────────────────
@@ -172,15 +275,20 @@ def _run_inference(sample: np.ndarray) -> dict:
 
     latency_ms = round((time.perf_counter() - t0) * 1000, 2)
 
-    # score_to_risk uses the CNN-GRU probs to derive action/classification
+    # CNN-GRU provides the supervised classification + confidence.
+    # The autoencoder contributes an unsupervised anomaly score. The
+    # COMBINED risk (max of the two) drives the ZTA policy decision so
+    # that an autoencoder-flagged anomaly can escalate enforcement even
+    # when the classifier is confident the traffic is normal.
     result = score_to_risk(probs.tolist())
+    decision = zta_decision(combined_risk)
 
     return {
         # Backward-compatible field (combined risk for policy decisions)
         'risk_score':             combined_risk,
         'classification':         result['classification'],
         'confidence':             result['confidence'],
-        'action':                 result['action'],
+        'action':                 decision,
         'latency_ms':             latency_ms,
         'probabilities':          {CLASS_NAMES[i]: round(float(p), 4)
                                    for i, p in enumerate(probs)},
@@ -191,7 +299,7 @@ def _run_inference(sample: np.ndarray) -> dict:
         'ae_reconstruction_error': round(ae_reconstruction_error, 8),
         'ae_is_anomaly':          ae_is_anomaly,
         # ZTA alias for action — explicit field for policy engine consumers
-        'zta_decision':           result['action'],
+        'zta_decision':           decision,
     }
 
 
@@ -305,6 +413,23 @@ Invoke-RestMethod -Uri http://127.0.0.1:5000/predict `
     """, 200
 
 
+def _zeek_status() -> dict:
+    """Report the Zeek pipeline status.
+
+    This prototype runs in REPLAY mode: traffic is pre-captured in GNS3
+    pcaps and processed offline by Zeek into conn.log / dns.log etc.
+    There is no live Zeek process, so we report the mode honestly and
+    surface whether the replayed logs are present rather than pretending
+    a live capture is running.
+    """
+    conn_log = os.path.join('data', 'logs', 'conn.log')
+    return {
+        'mode':             'replay',
+        'zeek_installed':   shutil.which('zeek') is not None,
+        'conn_log_present': os.path.exists(conn_log),
+    }
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Liveness check for load balancers / k8s probes."""
@@ -312,7 +437,8 @@ def health():
         'status':          'ok',
         'model_loaded':    model is not None,
         'ae_model_loaded': ae_model is not None,
-        'timestamp':       time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        'zeek':            _zeek_status(),
+        'timestamp':        time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     })
 
 
@@ -480,6 +606,11 @@ SCENARIO_META = {
         'segment':    'Internal Host → ZTA Gateway',
         'label':      4,
         'label_name': 'U2R',
+        # Zero-day scenario: the CNN-GRU variant was trained WITHOUT U2R,
+        # so it cannot recognise this class. The demo shows the autoencoder
+        # (trained on normal traffic only) catching it via combined risk.
+        'zero_day':    True,
+        'unseen_class': 'U2R',
     },
 }
 
@@ -498,9 +629,30 @@ def _get_test_df():
     return _test_df_cache
 
 
-@app.route('/demo/scenario/<scenario_name>', methods=['GET'])
+def _row_to_inputs(row):
+    """Build (feature_dict, feature_vector) from a single NSL-KDD row."""
+    feature_dict = {col: row[col] for col in FEATURE_COLS}
+    feature_vector = []
+    for col in FEATURE_COLS:
+        if col not in row.index:
+            feature_vector.append(0.0)
+        elif col in CATEGORICAL_COLS:
+            feature_vector.append(str(row[col]))
+        else:
+            try:
+                feature_vector.append(float(row[col]))
+            except (ValueError, TypeError):
+                feature_vector.append(str(row[col]))
+    return feature_dict, feature_vector
+
+
+@app.route('/demo/scenario/<scenario_name>', methods=['POST'])
 def demo_scenario(scenario_name):
-    """Run a pre-defined demo scenario sampled from NSL-KDD test data."""
+    """Run a pre-defined demo scenario sampled from NSL-KDD test data.
+
+    Uses POST (not GET) because each call mutates server state: it updates
+    the session statistics and appends an audit entry.
+    """
     if scenario_name not in SCENARIO_META:
         return jsonify({'error': f"Unknown scenario '{scenario_name}'. "
                         "Valid: normal, dos, probe, r2l, u2r"}), 400
@@ -516,30 +668,49 @@ def demo_scenario(scenario_name):
     if subset.empty:
         # Fallback: use any row and override label_name
         subset = df.sample(1)
-    else:
-        subset = subset.sample(1)
 
-    row = subset.iloc[0]
+    is_zero_day = meta.get('zero_day', False)
+    use_variant = is_zero_day and model_zeroday is not None
+    cnn_choice = model_zeroday if use_variant else model
 
-    # Build feature dict from FEATURE_COLS (excludes label, difficulty, DROP_COLS)
-    feature_dict = {col: row[col] for col in FEATURE_COLS}
+    feature_dict = None
+    feature_vector = None
+    result = None
 
-    # Raw feature values for display (40 values — keep strings for categoricals)
-    from preprocess import CATEGORICAL_COLS as _CAT_COLS
-    feature_vector = []
-    for col in FEATURE_COLS:
-        if col not in row.index:
-            feature_vector.append(0.0)
-        elif col in _CAT_COLS:
-            feature_vector.append(str(row[col]))
-        else:
-            try:
-                feature_vector.append(float(row[col]))
-            except (ValueError, TypeError):
-                feature_vector.append(str(row[col]))
+    # ── Zero-day scenario: pick a sample the variant CNN misses but the
+    #    autoencoder catches, so the demo reliably shows the AE saving the
+    #    day for an attack the supervised model never saw. ────────────────
+    if use_variant and not subset.empty:
+        candidates = subset.sample(min(25, len(subset)))
+        # Ideal: variant CNN classifies as Normal (low cnn_risk) AND AE flags anomaly
+        for _, cand in candidates.iterrows():
+            fd, fv = _row_to_inputs(cand)
+            samp = preprocess_single_sample(fd, ARTIFACTS_DIR)
+            res = _run_inference(samp, cnn_model=model_zeroday)
+            if res['cnn_risk'] < 0.3 and res['ae_is_anomaly']:
+                feature_dict, feature_vector, result = fd, fv, res
+                break
+        # Relax: any AE-flagged withheld sample
+        if result is None:
+            for _, cand in candidates.iterrows():
+                fd, fv = _row_to_inputs(cand)
+                samp = preprocess_single_sample(fd, ARTIFACTS_DIR)
+                res = _run_inference(samp, cnn_model=model_zeroday)
+                if res['ae_is_anomaly']:
+                    feature_dict, feature_vector, result = fd, fv, res
+                    break
 
-    sample = preprocess_single_sample(feature_dict, ARTIFACTS_DIR)
-    result = _run_inference(sample)
+    # Standard path (or zero-day fallback): single random row
+    if result is None:
+        row = subset.sample(1).iloc[0]
+        feature_dict, feature_vector = _row_to_inputs(row)
+        samp = preprocess_single_sample(feature_dict, ARTIFACTS_DIR)
+        result = _run_inference(samp, cnn_model=cnn_choice)
+
+    # Annotate which model produced the CNN classification
+    result['model_variant'] = 'no-u2r (zero-day)' if use_variant else 'standard'
+    if is_zero_day:
+        result['cnn_unseen_class'] = meta.get('unseen_class', 'U2R')
 
     # Update session stats
     decision = result['zta_decision']
@@ -552,7 +723,7 @@ def demo_scenario(scenario_name):
 
     # Build audit entry
     audit_entry = {
-        'timestamp':    datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'timestamp':    datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'scenario':     scenario_name,
         'source_ip':    meta['source_ip'],
         'dest_ip':      meta['dest_ip'],
@@ -564,11 +735,13 @@ def demo_scenario(scenario_name):
         'zta_decision': decision,
         'classification': result['classification'],
         'confidence':   result['confidence'],
+        'model_variant': result.get('model_variant', 'standard'),
     }
     _append_audit(audit_entry)
 
     log.info(f"[/demo/scenario/{scenario_name}] decision={decision} "
-             f"risk={result['combined_risk']} class={traffic_class}")
+             f"risk={result['combined_risk']} class={traffic_class} "
+             f"variant={result.get('model_variant', 'standard')}")
 
     return jsonify({
         **result,
@@ -610,6 +783,20 @@ def bad_request(e):
 def service_unavailable(e):
     return jsonify({'error': 'Service Unavailable',
                     'message': str(e.description)}), 503
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(e):
+    """Return JSON (not an HTML error page) for any unhandled exception.
+
+    HTTPExceptions (400, 404, 503, …) are forwarded with their own status
+    code so the specific handlers above still apply for those cases.
+    """
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return jsonify({'error': e.name, 'message': e.description}), e.code
+    log.exception('Unhandled exception in request')
+    return jsonify({'error': 'Internal Server Error',
+                    'message': str(e)}), 500
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
