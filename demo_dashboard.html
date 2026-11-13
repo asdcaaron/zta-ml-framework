@@ -32,7 +32,6 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      min-width: 1280px;
     }
 
     /* ── Header ── */
@@ -107,10 +106,13 @@
     /* ── Main Grid ── */
     .main-grid {
       display: grid;
-      grid-template-columns: 280px 1fr 320px;
+      grid-template-columns: 260px 1fr 300px;
       gap: 16px;
       padding: 16px 24px;
       min-height: calc(100vh - 200px);
+    }
+    @media (max-width: 1240px) {
+      .main-grid { grid-template-columns: 1fr; }
     }
 
     /* ── Generic card ── */
@@ -156,6 +158,7 @@
     .num-blocked { color: var(--red); }
 
     .mini-chart { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
+    .chart-group-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin: 8px 0 2px; font-weight: 600; }
     .bar-row { display: flex; align-items: center; gap: 8px; }
     .bar-row-label { font-size: 0.68rem; color: var(--muted); width: 68px; flex-shrink: 0; }
     .bar-track {
@@ -186,8 +189,14 @@
     /* Scenario buttons */
     .scenario-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 900px) {
+      .scenario-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .scenario-row { grid-template-columns: 1fr; }
     }
     .scenario-btn {
       border: none; border-radius: 10px;
@@ -218,6 +227,7 @@
     .btn-dos      { background: linear-gradient(135deg, #3d0000, #660000); border: 1px solid #ff4444; box-shadow: 0 0 10px rgba(255,68,68,0.2); }
     .btn-probe    { background: linear-gradient(135deg, #3d2600, #664000); border: 1px solid #ffaa00; box-shadow: 0 0 10px rgba(255,170,0,0.2); }
     .btn-r2l      { background: linear-gradient(135deg, #3d1a00, #662e00); border: 1px solid #ff6600; box-shadow: 0 0 10px rgba(255,102,0,0.2); }
+    .btn-u2r      { background: linear-gradient(135deg, #2a0040, #4d0070); border: 1px solid #bb88ff; box-shadow: 0 0 10px rgba(187,136,255,0.2); }
 
     /* Detection Results */
     .detection-panel { transition: transform 0.3s ease, opacity 0.3s ease; }
@@ -325,8 +335,9 @@
     .audit-log-wrap { flex: 1; display: flex; flex-direction: column; }
     .audit-scroll {
       flex: 1;
-      overflow-y: auto;
+      overflow: auto;
       max-height: calc(100vh - 280px);
+      min-width: 0;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
@@ -454,10 +465,10 @@
     <span class="pill-name">Flask API</span>
     <span class="pill-status" id="txt-api">Checking…</span>
   </div>
-  <div class="status-pill">
-    <span class="pill-dot amber"></span>
+  <div class="status-pill" id="pill-zeek">
+    <span class="pill-dot loading" id="dot-zeek"></span>
     <span class="pill-name">Zeek Pipeline</span>
-    <span class="pill-status">Simulated (GNS3)</span>
+    <span class="pill-status" id="txt-zeek">Checking…</span>
   </div>
 </div>
 
@@ -478,35 +489,62 @@
           <div class="net-counter-label">Normal</div>
         </div>
         <div class="net-counter">
-          <div class="net-counter-num num-susp" id="cnt-susp">0</div>
-          <div class="net-counter-label">Suspicious</div>
+          <div class="net-counter-num num-susp" id="cnt-anom">0</div>
+          <div class="net-counter-label">Anomalies</div>
         </div>
         <div class="net-counter">
           <div class="net-counter-num num-blocked" id="cnt-blocked">0</div>
           <div class="net-counter-label">Blocked</div>
         </div>
       </div>
-      <!-- Mini bar chart -->
+      <!-- Mini bar charts: traffic classification vs policy decisions (kept separate to avoid overlapping percentages) -->
       <div class="mini-chart" id="mini-chart">
+        <div class="chart-group-label">Traffic Classification</div>
         <div class="bar-row">
           <span class="bar-row-label">Normal</span>
           <div class="bar-track"><div class="bar-fill" id="bar-normal" style="width:0%;background:var(--green)"></div></div>
           <span class="bar-pct" id="barpct-normal">0%</span>
         </div>
         <div class="bar-row">
-          <span class="bar-row-label">Suspicious</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-susp" style="width:0%;background:var(--amber)"></div></div>
-          <span class="bar-pct" id="barpct-susp">0%</span>
+          <span class="bar-row-label">DoS</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-dos" style="width:0%;background:var(--red)"></div></div>
+          <span class="bar-pct" id="barpct-dos">0%</span>
         </div>
         <div class="bar-row">
-          <span class="bar-row-label">Monitored</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-mon" style="width:0%;background:#60a5fa"></div></div>
-          <span class="bar-pct" id="barpct-mon">0%</span>
+          <span class="bar-row-label">Probe</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-probe" style="width:0%;background:var(--amber)"></div></div>
+          <span class="bar-pct" id="barpct-probe">0%</span>
         </div>
         <div class="bar-row">
-          <span class="bar-row-label">Blocked</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-blocked" style="width:0%;background:var(--red)"></div></div>
-          <span class="bar-pct" id="barpct-blocked">0%</span>
+          <span class="bar-row-label">R2L</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-r2l" style="width:0%;background:var(--orange)"></div></div>
+          <span class="bar-pct" id="barpct-r2l">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">U2R</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-u2r" style="width:0%;background:var(--purple)"></div></div>
+          <span class="bar-pct" id="barpct-u2r">0%</span>
+        </div>
+        <div class="chart-group-label" style="margin-top:10px">Policy Decisions</div>
+        <div class="bar-row">
+          <span class="bar-row-label">Allow</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-allow" style="width:0%;background:var(--green)"></div></div>
+          <span class="bar-pct" id="barpct-allow">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Monitor</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-monitor" style="width:0%;background:var(--amber)"></div></div>
+          <span class="bar-pct" id="barpct-monitor">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Challenge</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-challenge" style="width:0%;background:var(--orange)"></div></div>
+          <span class="bar-pct" id="barpct-challenge">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-row-label">Block</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-block" style="width:0%;background:var(--red)"></div></div>
+          <span class="bar-pct" id="barpct-block">0%</span>
         </div>
       </div>
     </div>
@@ -534,7 +572,7 @@
     <div class="scenario-row">
       <button class="scenario-btn btn-normal" onclick="runScenario('normal')">
         <span class="btn-icon">👤</span>
-        <span class="btn-title">Normal User Access</span>
+        <span class="btn-title">Normal Access</span>
         <span class="btn-sub">Expected: ALLOW<br>Branch 10.20.0.50</span>
       </button>
       <button class="scenario-btn btn-dos" onclick="runScenario('dos')">
@@ -544,13 +582,18 @@
       </button>
       <button class="scenario-btn btn-probe" onclick="runScenario('probe')">
         <span class="btn-icon">👾</span>
-        <span class="btn-title">Zero-Day Anomaly</span>
-        <span class="btn-sub">Expected: MONITOR/CHALLENGE<br>Branch→DMZ</span>
+        <span class="btn-title">Probe / Anomaly</span>
+        <span class="btn-sub">Known class + AE check<br>Branch→DMZ</span>
       </button>
       <button class="scenario-btn btn-r2l" onclick="runScenario('r2l')">
         <span class="btn-icon">🔐</span>
-        <span class="btn-title">Suspicious Access</span>
+        <span class="btn-title">R2L Access</span>
         <span class="btn-sub">Expected: CHALLENGE_MFA<br>Remote→ZTA Gateway</span>
+      </button>
+      <button class="scenario-btn btn-u2r" onclick="runScenario('u2r')">
+        <span class="btn-icon">👑</span>
+        <span class="btn-title">U2R Attack</span>
+        <span class="btn-sub">Expected: BLOCK<br>Internal→ZTA Gateway</span>
       </button>
     </div>
 
@@ -766,7 +809,7 @@
   // ── Config ────────────────────────────────────────────────────────────────
   const API = 'http://localhost:5000';
   let auditLog = [];
-  let sessionCounts = { total: 0, normal: 0, suspicious: 0, blocked: 0 };
+  let classCounts    = { Normal: 0, DoS: 0, Probe: 0, R2L: 0, U2R: 0 };
   let decisionCounts = { ALLOW: 0, MONITOR: 0, CHALLENGE_MFA: 0, BLOCK: 0 };
   let _aeThresholdGlobal = null;
 
@@ -796,11 +839,27 @@
       setDot('dot-ae',  data.ae_model_loaded ? 'green' : 'red');
       setTxt('txt-ae',  data.ae_model_loaded ? 'Loaded' : 'Not Loaded');
 
+      // Zeek pipeline: this prototype runs in replay mode (pre-captured
+      // GNS3 pcaps processed offline by Zeek). Show the real mode + whether
+      // the replayed logs are present instead of a hard-coded "simulated".
+      if (data.zeek) {
+        if (data.zeek.conn_log_present) {
+          setDot('dot-zeek', 'amber');
+          setTxt('txt-zeek', data.zeek.zeek_installed
+            ? 'Replay (GNS3) — Zeek ready'
+            : 'Replay (GNS3) — logs present');
+        } else {
+          setDot('dot-zeek', 'red');
+          setTxt('txt-zeek', 'Replay (no logs)');
+        }
+      }
+
       document.getElementById('offline-banner').classList.remove('visible');
     } catch (e) {
       setDot('dot-api', 'red'); setTxt('txt-api', 'Offline');
       setDot('dot-cnn', 'red'); setTxt('txt-cnn', '—');
       setDot('dot-ae',  'red'); setTxt('txt-ae',  '—');
+      setDot('dot-zeek','red'); setTxt('txt-zeek', '—');
       document.getElementById('offline-banner').classList.add('visible');
     }
   }
@@ -826,10 +885,11 @@
         decisionCounts.MONITOR      = stats.by_decision?.MONITOR      || 0;
         decisionCounts.CHALLENGE_MFA= stats.by_decision?.CHALLENGE_MFA|| 0;
         decisionCounts.BLOCK        = stats.by_decision?.BLOCK        || 0;
-        sessionCounts.total   = stats.total || 0;
-        sessionCounts.normal  = (stats.by_class?.Normal || 0);
-        sessionCounts.suspicious = sessionCounts.total - sessionCounts.normal;
-        sessionCounts.blocked = decisionCounts.BLOCK;
+        classCounts.Normal = stats.by_class?.Normal || 0;
+        classCounts.DoS    = stats.by_class?.DoS     || 0;
+        classCounts.Probe  = stats.by_class?.Probe   || 0;
+        classCounts.R2L    = stats.by_class?.R2L     || 0;
+        classCounts.U2R    = stats.by_class?.U2R     || 0;
         updateCounters();
         updateDecisionCounts();
       }
@@ -849,10 +909,13 @@
     document.querySelectorAll('.scenario-btn').forEach(b => b.classList.add('loading-btn'));
 
     try {
-      const res = await fetch(`${API}/demo/scenario/${scenarioName}`);
+      const res = await fetch(`${API}/demo/scenario/${scenarioName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(`Error ${res.status}: ${err.error || res.statusText}`);
+        alert(`Error ${res.status}: ${err.error || err.message || res.statusText}`);
         return;
       }
       const data = await res.json();
@@ -1013,37 +1076,49 @@
     const cls = data.traffic_class_label || data.classification;
     const dec = data.zta_decision || data.action;
 
-    sessionCounts.total++;
-    if (cls === 'Normal') sessionCounts.normal++;
-    else                  sessionCounts.suspicious++;
-    if (dec === 'BLOCK')  sessionCounts.blocked++;
-
-    decisionCounts[dec] = (decisionCounts[dec] || 0) + 1;
+    if (classCounts[cls] !== undefined) classCounts[cls]++;
+    if (decisionCounts[dec] !== undefined) decisionCounts[dec]++;
 
     updateCounters();
     updateDecisionCounts();
   }
 
+  function totalCount() {
+    // Total = sum of all traffic-class counts (Normal + every attack type)
+    return classCounts.Normal + classCounts.DoS + classCounts.Probe +
+           classCounts.R2L + classCounts.U2R;
+  }
+
   function updateCounters() {
-    document.getElementById('cnt-total').textContent   = sessionCounts.total;
-    document.getElementById('cnt-normal').textContent  = sessionCounts.normal;
-    document.getElementById('cnt-susp').textContent    = sessionCounts.suspicious;
-    document.getElementById('cnt-blocked').textContent = sessionCounts.blocked;
+    const total   = totalCount();
+    const normal  = classCounts.Normal;
+    const anom    = total - normal;                 // Anomalies = non-Normal traffic
+    const blocked = decisionCounts.BLOCK;           // Blocked = policy decision
+    document.getElementById('cnt-total').textContent   = total;
+    document.getElementById('cnt-normal').textContent  = normal;
+    document.getElementById('cnt-anom').textContent    = anom;
+    document.getElementById('cnt-blocked').textContent = blocked;
     updateBars();
   }
 
+  // Two independent measurements, never mixed:
+  //  - Traffic classification: Normal / DoS / Probe / R2L / U2R
+  //  - Policy decisions:        ALLOW / MONITOR / CHALLENGE_MFA / BLOCK
   function updateBars() {
-    const t = sessionCounts.total || 1;
-    const decs = decisionCounts;
-    const allow     = decs.ALLOW || 0;
-    const monitored = decs.MONITOR || 0;
-    const susp      = (decs.CHALLENGE_MFA || 0) + monitored;
-    const blocked   = decs.BLOCK || 0;
+    const t = totalCount() || 1;
 
-    setBar('bar-normal',  'barpct-normal',  allow,     t);
-    setBar('bar-susp',    'barpct-susp',    susp,      t);
-    setBar('bar-mon',     'barpct-mon',     monitored, t);
-    setBar('bar-blocked', 'barpct-blocked', blocked,   t);
+    // Traffic classification
+    setBar('bar-normal', 'barpct-normal', classCounts.Normal, t);
+    setBar('bar-dos',    'barpct-dos',    classCounts.DoS,    t);
+    setBar('bar-probe',  'barpct-probe',  classCounts.Probe,  t);
+    setBar('bar-r2l',    'barpct-r2l',    classCounts.R2L,    t);
+    setBar('bar-u2r',    'barpct-u2r',    classCounts.U2R,    t);
+
+    // Policy decisions
+    setBar('bar-allow',    'barpct-allow',    decisionCounts.ALLOW,        t);
+    setBar('bar-monitor',  'barpct-monitor',  decisionCounts.MONITOR,      t);
+    setBar('bar-challenge','barpct-challenge', decisionCounts.CHALLENGE_MFA, t);
+    setBar('bar-block',    'barpct-block',    decisionCounts.BLOCK,         t);
   }
 
   function setBar(barId, pctId, count, total) {
@@ -1082,15 +1157,21 @@
     const dec = entry.zta_decision || '';
     tr.className = 'audit-row-' + decRowClass(dec);
     const time = new Date(entry.timestamp).toLocaleTimeString('en-GB');
-    tr.innerHTML = `
-      <td>${time}</td>
-      <td>${entry.source_ip || '—'}</td>
-      <td>${entry.traffic_class_label || '—'}</td>
-      <td>${(entry.cnn_risk !== undefined ? entry.cnn_risk.toFixed(3) : '—')}</td>
-      <td>${(entry.ae_risk  !== undefined ? entry.ae_risk.toFixed(3)  : '—')}</td>
-      <td>${(entry.combined_risk !== undefined ? entry.combined_risk.toFixed(3) : '—')}</td>
-      <td>${dec}</td>
-    `;
+    // Safe text insertion — never use innerHTML with audit data
+    const cells = [
+      time,
+      entry.source_ip || '—',
+      entry.traffic_class_label || '—',
+      entry.cnn_risk !== undefined ? entry.cnn_risk.toFixed(3) : '—',
+      entry.ae_risk  !== undefined ? entry.ae_risk.toFixed(3)  : '—',
+      entry.combined_risk !== undefined ? entry.combined_risk.toFixed(3) : '—',
+      dec,
+    ];
+    cells.forEach(c => {
+      const td = document.createElement('td');
+      td.textContent = c;
+      tr.appendChild(td);
+    });
     tbody.insertBefore(tr, tbody.firstChild);
     // Trim to 100 rows
     while (tbody.children.length > 100) tbody.removeChild(tbody.lastChild);
@@ -1120,7 +1201,7 @@
     dos:    { pathId: 'path-dos',    lines: ['line-inet-zta'] },
     probe:  { pathId: 'path-probe',  lines: ['line-zta-zeek','line-zeek-branch','line-branch-dmz'] },
     r2l:    { pathId: 'path-r2l',    lines: ['line-inet-zta'] },
-    u2r:    { pathId: 'path-normal', lines: ['line-branch-hq'] },
+    u2r:    { pathId: 'path-u2r', lines: ['line-branch-hq'] },
   };
 
   const DECISION_COLORS = {
