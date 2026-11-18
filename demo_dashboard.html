@@ -198,7 +198,6 @@
     }
     @keyframes loadOverlay { from{opacity:0.2} to{opacity:0.6} }
 
-    .btn-icon   { font-size: 1.5rem; display: block; margin-bottom: 6px; }
     .btn-title  { font-size: 0.82rem; font-weight: 700; color: #fff; display: block; }
     .btn-sub    { font-size: 0.65rem; opacity: 0.75; color: #fff; display: block; margin-top: 4px; line-height: 1.4; }
 
@@ -407,7 +406,7 @@
 
 <!-- Offline banner -->
 <div class="offline-banner" id="offline-banner">
-  ⚠ API OFFLINE — Start with: <strong>python src/api.py</strong>
+  API OFFLINE — Start with: <strong>python src/api.py</strong>
 </div>
 
 <!-- Status Bar -->
@@ -521,9 +520,9 @@
         <div class="segment-ips" id="seg-ips">Run a scenario to see segment info</div>
       </div>
       <div style="margin-top:12px;font-size:0.65rem;color:var(--muted);line-height:1.6;">
-        <div>🏢 HQ &nbsp;&nbsp;&nbsp;10.10.0.0/24</div>
-        <div>🌿 Branch &nbsp;10.20.0.0/24</div>
-        <div>🛡 DMZ &nbsp;&nbsp;&nbsp;172.16.0.0/24</div>
+        <div>HQ &nbsp;&nbsp;&nbsp;10.10.0.0/24</div>
+        <div>Branch &nbsp;10.20.0.0/24</div>
+        <div>DMZ &nbsp;&nbsp;172.16.0.0/24</div>
       </div>
     </div>
   </div>
@@ -534,27 +533,22 @@
     <!-- Scenario Buttons -->
     <div class="scenario-row">
       <button class="scenario-btn btn-normal" onclick="runScenario('normal')">
-        <span class="btn-icon">👤</span>
         <span class="btn-title">Normal Access</span>
         <span class="btn-sub">Expected: ALLOW<br>Branch 10.20.0.50</span>
       </button>
       <button class="scenario-btn btn-dos" onclick="runScenario('dos')">
-        <span class="btn-icon">💥</span>
         <span class="btn-title">DoS Attack</span>
         <span class="btn-sub">Expected: BLOCK<br>Internet 203.0.113.10</span>
       </button>
       <button class="scenario-btn btn-probe" onclick="runScenario('probe')">
-        <span class="btn-icon">👾</span>
         <span class="btn-title">Probe / Anomaly</span>
         <span class="btn-sub">Known class + AE check<br>Branch→DMZ</span>
       </button>
       <button class="scenario-btn btn-r2l" onclick="runScenario('r2l')">
-        <span class="btn-icon">🔐</span>
         <span class="btn-title">R2L Access</span>
         <span class="btn-sub">Expected: CHALLENGE_MFA<br>Remote→ZTA Gateway</span>
       </button>
       <button class="scenario-btn btn-u2r" onclick="runScenario('u2r')">
-        <span class="btn-icon">👑</span>
         <span class="btn-title">U2R Attack</span>
         <span class="btn-sub">Expected: BLOCK<br>Internal→ZTA Gateway</span>
       </button>
@@ -563,7 +557,7 @@
     <!-- Detection Results -->
     <div class="card detection-panel" id="detection-panel">
       <div class="card-title">Detection Results</div>
-      <div id="detection-idle" class="idle-hint">▶ Click a scenario button to run inference</div>
+      <div id="detection-idle" class="idle-hint">Click a scenario button to run inference</div>
       <div id="detection-content" style="display:none">
         <span class="class-badge" id="class-badge">—</span>
         <div class="dual-models">
@@ -686,7 +680,7 @@
 <!-- GNS3 Topology -->
 <div class="topology-section">
   <div class="topology-title">
-    🌐 GNS3 Hybrid Network Topology — 10.10.0.0/24 | 10.20.0.0/24 | 172.16.0.0/24
+    GNS3 Hybrid Network Topology — 10.10.0.0/24 | 10.20.0.0/24 | 172.16.0.0/24
   </div>
   <div class="topology-wrap">
     <svg class="topo-svg" viewBox="0 0 1000 220" xmlns="http://www.w3.org/2000/svg" id="topo-svg">
@@ -711,38 +705,33 @@
 
       <!-- Internet / Attacker node -->
       <circle cx="80" cy="100" r="38" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
-      <text x="80" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#dc2626">🌐</text>
-      <text x="80" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#dc2626" font-weight="600">Internet</text>
-      <text x="80" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#991b1b">203.0.113.10</text>
+      <text x="80" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#dc2626" font-weight="600">Internet</text>
+      <text x="80" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#991b1b">203.0.113.10</text>
 
       <!-- ZTA Gateway node -->
       <rect x="263" y="70" width="74" height="60" rx="8" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
-      <text x="300" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#1d4ed8">🔐</text>
-      <text x="300" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#1d4ed8" font-weight="700">ZTA Gateway</text>
-      <text x="300" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">Flask :5000</text>
+      <text x="300" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#1d4ed8" font-weight="700">ZTA Gateway</text>
+      <text x="300" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">Flask :5000</text>
 
       <!-- Zeek Tap -->
       <rect x="419" y="82" width="74" height="36" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
-      <text x="456" y="98" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#d97706" font-weight="600">🔍 Zeek Tap</text>
+      <text x="456" y="98" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#d97706" font-weight="600">Zeek Tap</text>
       <text x="456" y="109" text-anchor="middle" font-family="Inter,sans-serif" font-size="7" fill="#92400e">Traffic Mirror</text>
 
       <!-- Branch PC node -->
       <circle cx="614" cy="100" r="38" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
-      <text x="614" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#16a34a">💻</text>
-      <text x="614" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#16a34a" font-weight="600">Branch PC</text>
-      <text x="614" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#166534">10.20.0.50</text>
+      <text x="614" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#16a34a" font-weight="600">Branch PC</text>
+      <text x="614" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#166534">10.20.0.50</text>
 
       <!-- HQ Server node -->
       <circle cx="730" cy="100" r="38" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
-      <text x="730" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#1d4ed8">🖥</text>
-      <text x="730" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#1d4ed8" font-weight="600">HQ Server</text>
-      <text x="730" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">10.10.0.10</text>
+      <text x="730" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#1d4ed8" font-weight="600">HQ Server</text>
+      <text x="730" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">10.10.0.10</text>
 
       <!-- DMZ Server node -->
       <circle cx="900" cy="100" r="38" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
-      <text x="900" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#ea580c">🛡</text>
-      <text x="900" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ea580c" font-weight="600">DMZ Server</text>
-      <text x="900" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#9a3412">172.16.0.10</text>
+      <text x="900" y="104" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ea580c" font-weight="600">DMZ Server</text>
+      <text x="900" y="115" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#9a3412">172.16.0.10</text>
 
       <!-- Subnet labels -->
       <text x="300" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">ZTA Policy Engine</text>
