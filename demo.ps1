@@ -1,17 +1,20 @@
 # =============================================================================
-# demo.ps1  —  Live Pipeline Demo for Mid-Semester Presentation
-# Risk-Adaptive Zero Trust  |  Okado Aaron Obbo  |  S24B23/015
+# demo.ps1  --  Live Dashboard Demo Startup
+# Risk-Adaptive Zero Trust  |  Okado Aaron Obbo  |  S24B23/015  |  UCU
 #
-# HOW TO USE ON PRESENTATION DAY:
-#   1. Open PowerShell in the project folder
+# HOW TO USE:
+#   1. Open PowerShell (anywhere)
 #   2. Run:  .\demo.ps1
-#   3. Walk the panelist through each section
+#   3. It starts the Flask API, waits for the models to load, then opens the
+#      dashboard in your browser. Present from the browser.
+#
+# The API runs in its own window -- leave it open. Close it (Ctrl+C) when done.
 # =============================================================================
 
-$PROJECT = "c:\Users\AARON\Desktop\New folder\zta-ml-framework"
+$PROJECT = "c:\Users\AARON\Desktop\Final Year Project Prototype\zta-ml-framework"
 Set-Location $PROJECT
 
-# ── Colours ───────────────────────────────────────────────────────────────────
+# -- Colours -------------------------------------------------------------------
 function title($t)  { Write-Host "`n$t" -ForegroundColor Cyan }
 function ok($t)     { Write-Host "  $t" -ForegroundColor Green }
 function warn($t)   { Write-Host "  $t" -ForegroundColor Yellow }
@@ -20,142 +23,93 @@ function info($t)   { Write-Host "  $t" -ForegroundColor White }
 
 Clear-Host
 Write-Host "================================================================" -ForegroundColor Cyan
-Write-Host "  RISK-ADAPTIVE ZERO TRUST — LIVE PIPELINE DEMO" -ForegroundColor Cyan
-Write-Host "  Okado Aaron Obbo  |  S24B23/015  |  BSc Computer Science" -ForegroundColor Cyan
+Write-Host "  RISK-ADAPTIVE ZERO TRUST -- LIVE DASHBOARD DEMO" -ForegroundColor Cyan
+Write-Host "  Okado Aaron Obbo  |  S24B23/015  |  Uganda Christian University" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 
-# =============================================================================
-# STEP 1 — Show the project files exist
-# =============================================================================
-title "STEP 1: Project Evidence"
-info "Source code files:"
-Get-ChildItem src\ | ForEach-Object { info "  src\$($_.Name)" }
-info ""
-info "Trained models:"
-Get-ChildItem data\*.keras, data\*.h5 -ErrorAction SilentlyContinue |
-    Select-Object Name, @{N='Size_MB';E={[math]::Round($_.Length/1MB,2)}} |
-    ForEach-Object { info "  $($_.Name)  ($($_.Size_MB) MB)" }
-info ""
-info "Training results:"
-Get-Content data\training_results.json
-
-Read-Host "`n  [Press Enter to continue to Step 2]"
-
-# =============================================================================
-# STEP 2 — Check API is running, open browser
-# =============================================================================
-title "STEP 2: Risk-Scoring API"
-info "Checking if API is running on port 5000..."
-
-try {
-    $health = Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -TimeoutSec 3
-    ok "API is UP  |  Model loaded: $($health.model_loaded)  |  Time: $($health.timestamp)"
-    info ""
-    info "Opening browser dashboard..."
-    Start-Process "http://127.0.0.1:5000"
-} catch {
-    warn "API not running. Starting it now..."
-    Start-Process powershell -ArgumentList "-NoExit -Command `"Set-Location '$PROJECT'; python src/api.py`""
-    info "Waiting for API to start (15 seconds)..."
-    Start-Sleep 15
-    $health = Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -TimeoutSec 5
-    ok "API is now UP  |  Model loaded: $($health.model_loaded)"
-    Start-Process "http://127.0.0.1:5000"
+# -- Step 1: Confirm project location + zero-day variant model ----------------
+if (-not (Test-Path "src\api.py")) {
+    danger "Project not found at '$PROJECT'."
+    danger "Update `$PROJECT at the top of demo.ps1 to your project folder."
+    exit 1
 }
+$branch = git branch --show-current 2>$null
+info "Project : $PROJECT"
+info "Branch  : $branch"
 
-Read-Host "`n  [Press Enter to continue to Step 3 - Live Predictions]"
-
-# =============================================================================
-# STEP 3 — Live predictions on three scenarios
-# =============================================================================
-title "STEP 3: Live Risk Scoring — Three Scenarios"
-info "Sending real connection features to the CNN-GRU model via the API..."
-info ""
-
-# ── Scenario A: Normal Traffic ─────────────────────────────────────────────
-info "--- Scenario A: Normal HTTP connection (employee browsing) ---"
-$body = '{"features":{"duration":0,"protocol_type":"tcp","service":"http","flag":"SF","src_bytes":232,"dst_bytes":8153,"count":8,"srv_count":8,"same_srv_rate":1.0,"serror_rate":0.0,"rerror_rate":0.0}}'
-$r = Invoke-RestMethod -Uri "http://127.0.0.1:5000/predict" -Method POST -Body $body -ContentType "application/json"
-ok "  Risk Score    : $($r.risk_score)   (LOW)"
-ok "  Classification: $($r.classification)"
-ok "  ZTA Action    : $($r.action)  <-- employee gets through"
-info "  Confidence    : $($r.confidence)   |   Latency: $($r.latency_ms) ms"
-info ""
-
-# ── Scenario B: DoS Attack ─────────────────────────────────────────────────
-info "--- Scenario B: DoS Attack (SYN flood — 511 failed connections) ---"
-$body = '{"features":{"duration":0,"protocol_type":"tcp","service":"private","flag":"S0","src_bytes":0,"dst_bytes":0,"count":511,"srv_count":511,"serror_rate":1.0,"srv_serror_rate":1.0,"same_srv_rate":1.0,"diff_srv_rate":0.0,"rerror_rate":0.0}}'
-$r = Invoke-RestMethod -Uri "http://127.0.0.1:5000/predict" -Method POST -Body $body -ContentType "application/json"
-if ($r.action -eq "BLOCK") { danger "  Risk Score    : $($r.risk_score)   (HIGH)" }
-else                        { warn   "  Risk Score    : $($r.risk_score)" }
-if ($r.action -eq "BLOCK")          { danger "  ZTA Action    : $($r.action)  <-- attacker is blocked" }
-elseif ($r.action -eq "CHALLENGE_MFA") { warn "  ZTA Action    : $($r.action)  <-- MFA challenge triggered" }
-else                                { info "  ZTA Action    : $($r.action)" }
-info "  Classification: $($r.classification)   |   Confidence: $($r.confidence)"
-info "  Latency       : $($r.latency_ms) ms"
-info ""
-
-# ── Scenario C: Port Scan / Probe ──────────────────────────────────────────
-info "--- Scenario C: Network Probe (port scan — high reject rate) ---"
-$body = '{"features":{"duration":0,"protocol_type":"tcp","service":"private","flag":"REJ","src_bytes":0,"dst_bytes":0,"count":229,"srv_count":20,"rerror_rate":1.0,"srv_rerror_rate":1.0,"diff_srv_rate":0.06,"same_srv_rate":0.09,"serror_rate":0.0}}'
-$r = Invoke-RestMethod -Uri "http://127.0.0.1:5000/predict" -Method POST -Body $body -ContentType "application/json"
-if ($r.risk_score -gt 0.5) {
-    warn "  Risk Score    : $($r.risk_score)   (MEDIUM-HIGH)"
-    warn "  ZTA Action    : $($r.action)"
+if (Test-Path "data\cnn_gru_model_no_u2r.keras") {
+    ok "Zero-day variant model found -- the U2R scenario will use it."
 } else {
-    info "  Risk Score    : $($r.risk_score)"
-    info "  ZTA Action    : $($r.action)"
-}
-info "  Classification: $($r.classification)   |   Confidence: $($r.confidence)"
-info "  Latency       : $($r.latency_ms) ms"
-
-Read-Host "`n  [Press Enter to continue to Step 4 - Audit Trail]"
-
-# =============================================================================
-# STEP 4 — Show the audit trail
-# =============================================================================
-title "STEP 4: Audit Trail (every decision is logged)"
-info "Last 5 entries in data\audit.jsonl:"
-Get-Content data\audit.jsonl | Select-Object -Last 5 | ForEach-Object {
-    $entry = $_ | ConvertFrom-Json
-    $colour = if ($entry.action -eq "BLOCK") { "Red" }
-              elseif ($entry.action -eq "CHALLENGE_MFA") { "Yellow" }
-              elseif ($entry.action -eq "MONITOR") { "DarkYellow" }
-              else { "Green" }
-    Write-Host "  [$($entry.timestamp.Substring(0,19))]  " -NoNewline
-    Write-Host "$($entry.action)" -ForegroundColor $colour -NoNewline
-    Write-Host "  risk=$($entry.risk_score)  class=$($entry.classification)  confidence=$($entry.confidence)"
+    warn "Zero-day variant model NOT found (data\cnn_gru_model_no_u2r.keras)."
+    warn "The U2R scenario will fall back to the standard model."
+    warn "Get the variant with:  git checkout feat/zero-day-variant"
 }
 
-Read-Host "`n  [Press Enter to continue to Step 5 - Code Evidence]"
+# -- Step 2: Start the API (only if not already running) -----------------------
+title "Starting the Flask API..."
+$portResponds = $false
+try {
+    Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -TimeoutSec 2 | Out-Null
+    $portResponds = $true
+} catch {}
 
-# =============================================================================
-# STEP 5 — Show key code files
-# =============================================================================
-title "STEP 5: Key Source Files (open in editor if requested)"
-info "The panelist can ask to see any of these:"
+if ($portResponds) {
+    ok "API already running on port 5000 -- not starting a second instance."
+} else {
+    info "Launching the API in a new window..."
+    Start-Process powershell -ArgumentList "-NoExit -Command `"Set-Location '$PROJECT'; python src/api.py`""
+    info "Waiting for the models to load (can take ~15s)..."
+}
+
+# Poll /health until BOTH models report loaded (max ~60s)
+$ready = $false
+$h = $null
+for ($i = 0; $i -lt 30; $i++) {
+    Start-Sleep -Seconds 2
+    try {
+        $h = Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -TimeoutSec 2
+        if ($h.model_loaded -and $h.ae_model_loaded) { $ready = $true; break }
+    } catch {}
+}
+
+if (-not $ready) {
+    danger "API did not become ready in time. Check the API window for errors"
+    danger "(e.g. missing dependencies or model files)."
+    exit 1
+}
+
+ok "CNN-GRU loaded : $($h.model_loaded)"
+ok "Autoencoder    : $($h.ae_model_loaded)"
+if ($h.zeek) {
+    info "Zeek pipeline : mode=$($h.zeek.mode), conn.log present=$($h.zeek.conn_log_present)"
+}
+
+# -- Step 3: Open the dashboard ------------------------------------------------
+title "Opening the dashboard..."
+Start-Process "http://localhost:5000/dashboard"
+ok "Dashboard opened at http://localhost:5000/dashboard"
+info "(If it doesn't open automatically, browse there.)"
+
+# -- Step 4: Click guide for the presenter -------------------------------------
+title "Demo guide -- click the scenario buttons in the dashboard"
+info "  Normal Access     ->  ALLOW   (low risk)"
+info "  DoS Attack         ->  BLOCK   (often the CNN misreads it as Normal,"
+info "                                  but the autoencoder catches it)"
+info "  Probe / Anomaly    ->  BLOCK"
+info "  R2L Access         ->  CHALLENGE_MFA / BLOCK"
+info "  U2R Attack         ->  ZERO-DAY: the CNN (trained without U2R) says"
+info "                          Normal, but the autoencoder flags it, so the"
+info "                          combined risk drives a BLOCK."
 info ""
-info "  src/autoencoder.py   -- self-supervised autoencoder (trains on normal only)"
-info "  src/model.py         -- CNN-GRU architecture"
-info "  src/train.py         -- trains both models"
-info "  src/evaluate.py      -- 4-way comparison"
-info "  src/api.py           -- Flask risk-scoring API"
-info "  src/preprocess.py    -- noise removal + 40-feature pipeline"
+info "  Watch in the dashboard:"
+info "    - Detection Results : CNN class + autoencoder anomaly flag"
+info "    - Risk Assessment   : CNN / AE / combined risk bars"
+info "    - ZTA Policy Decision badge"
+info "    - Audit Log (right) + Network Activity bars (left)"
 info ""
-info "GitHub repository:"
-info "  https://github.com/asdcaaron/zta-ml-framework"
-info "  Branch: Aaron  |  7 commits"
+info "  The API window must stay open. Close it (Ctrl+C) when the demo ends."
 
-Read-Host "`n  [Press Enter to see GitHub commit history]"
-Set-Location $PROJECT
-git log --oneline 2>&1 | ForEach-Object { info "  $_" }
-
-# =============================================================================
-# DONE
-# =============================================================================
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Cyan
-Write-Host "  DEMO COMPLETE" -ForegroundColor Cyan
-Write-Host "  Total pipeline: Zeek -> preprocess -> CNN-GRU -> risk score" -ForegroundColor Cyan
-Write-Host "  -> ZTA action -> audit log" -ForegroundColor Cyan
+Write-Host "  DASHBOARD IS LIVE -- present from the browser" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
