@@ -11,19 +11,19 @@
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:         #0a0e1a;
-      --sidebar:    #0d1420;
-      --card:       #111827;
-      --border:     #1e2d45;
-      --blue:       #003087;
-      --gold:       #C8A84B;
-      --green:      #00ff88;
-      --red:        #ff4444;
-      --amber:      #ffaa00;
-      --orange:     #ff6600;
-      --purple:     #bb88ff;
-      --text:       #e2e8f0;
-      --muted:      #94a3b8;
+      --bg:         #f0f4f8;
+      --sidebar:    #e2e8f0;
+      --card:       #ffffff;
+      --border:     #cbd5e1;
+      --blue:       #1d4ed8;
+      --gold:       #b45309;
+      --green:      #16a34a;
+      --red:        #dc2626;
+      --amber:      #d97706;
+      --orange:     #ea580c;
+      --purple:     #7c3aed;
+      --text:       #1e293b;
+      --muted:      #64748b;
       --font:       'Inter', 'Segoe UI', sans-serif;
     }
     html { font-size: 15px; }
@@ -34,32 +34,10 @@
       min-height: 100vh;
     }
 
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, #001a4d 0%, #003087 60%, #0044aa 100%);
-      padding: 14px 32px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 3px solid var(--gold);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-crest { font-size: 2.4rem; line-height: 1; }
-    .header-titles { display: flex; flex-direction: column; gap: 2px; }
-    .header-uni   { font-size: 0.72rem; color: var(--gold); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-    .header-main  { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
-    .header-sub   { font-size: 0.72rem; color: rgba(255,255,255,0.65); }
-    .header-right { text-align: right; }
-    .header-clock { font-size: 1.5rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; letter-spacing: 1px; }
-    .header-date  { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
-
     /* ── Offline banner ── */
     .offline-banner {
       display: none;
-      background: #3d0000;
+      background: #fee2e2;
       border: 1px solid var(--red);
       color: var(--red);
       padding: 10px 32px;
@@ -95,9 +73,9 @@
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .pill-dot.green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .pill-dot.red    { background: var(--red);   box-shadow: 0 0 6px var(--red); }
-    .pill-dot.amber  { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .pill-dot.green  { background: var(--green); box-shadow: 0 0 6px rgba(22,163,74,0.4); }
+    .pill-dot.red    { background: var(--red);   box-shadow: 0 0 6px rgba(220,38,38,0.4); }
+    .pill-dot.amber  { background: var(--amber); box-shadow: 0 0 6px rgba(217,119,6,0.4); }
     .pill-dot.loading { background: var(--amber); animation: blink 1s infinite; }
     .pill-name  { font-weight: 600; color: var(--text); }
     .pill-status { color: var(--muted); font-size: 0.72rem; }
@@ -121,6 +99,7 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .card-title {
       font-size: 0.75rem;
@@ -244,11 +223,11 @@
       letter-spacing: 0.5px;
       margin-bottom: 12px;
     }
-    .badge-normal   { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
-    .badge-dos      { background: rgba(255,68,68,0.15);  color: var(--red);   border: 1px solid var(--red); }
-    .badge-probe    { background: rgba(255,170,0,0.15);  color: var(--amber); border: 1px solid var(--amber); }
-    .badge-r2l      { background: rgba(255,102,0,0.15);  color: var(--orange);border: 1px solid var(--orange); }
-    .badge-u2r      { background: rgba(187,136,255,0.15);color: var(--purple);border: 1px solid var(--purple); }
+    .badge-normal   { background: rgba(22,163,74,0.1);   color: var(--green);  border: 1px solid var(--green); }
+    .badge-dos      { background: rgba(220,38,38,0.1);   color: var(--red);    border: 1px solid var(--red); }
+    .badge-probe    { background: rgba(217,119,6,0.1);   color: var(--amber);  border: 1px solid var(--amber); }
+    .badge-r2l      { background: rgba(234,88,12,0.1);   color: var(--orange); border: 1px solid var(--orange); }
+    .badge-u2r      { background: rgba(124,58,237,0.1);  color: var(--purple); border: 1px solid var(--purple); }
 
     .dual-models { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 2px; }
     .model-box {
@@ -261,7 +240,7 @@
     .model-class  { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
     .conf-label   { font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; }
     .conf-track   { background: var(--card); border-radius: 4px; height: 8px; overflow: hidden; }
-    .conf-fill    { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #003087, #0088ff); transition: width 0.6s ease; }
+    .conf-fill    { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #1d4ed8, #3b82f6); transition: width 0.6s ease; }
     .conf-pct     { font-size: 0.72rem; color: #60a5fa; margin-top: 4px; font-weight: 600; }
 
     .ae-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -278,10 +257,10 @@
     .risk-row-val     { font-size: 0.72rem; font-weight: 700; }
     .risk-track { background: var(--sidebar); border-radius: 5px; height: 12px; overflow: hidden; border: 1px solid var(--border); }
     .risk-fill  { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
-    .rf-low      { background: linear-gradient(90deg, #004d2a, var(--green)); }
-    .rf-elevated { background: linear-gradient(90deg, #4d3300, var(--amber)); }
-    .rf-high     { background: linear-gradient(90deg, #4d2200, var(--orange)); }
-    .rf-critical { background: linear-gradient(90deg, #4d0000, var(--red)); }
+    .rf-low      { background: linear-gradient(90deg, #bbf7d0, var(--green)); }
+    .rf-elevated { background: linear-gradient(90deg, #fef3c7, var(--amber)); }
+    .rf-high     { background: linear-gradient(90deg, #fed7aa, var(--orange)); }
+    .rf-critical { background: linear-gradient(90deg, #fecaca, var(--red)); }
 
     .combined-risk-display {
       text-align: center;
@@ -311,11 +290,11 @@
       50%  { box-shadow: 0 0 24px 8px currentColor; }
       100% { box-shadow: 0 0 0 0px currentColor; }
     }
-    .dec-allow    { color: var(--green);  background: rgba(0,255,136,0.1);  border: 2px solid var(--green); }
-    .dec-monitor  { color: var(--amber);  background: rgba(255,170,0,0.1);  border: 2px solid var(--amber); }
-    .dec-challenge{ color: var(--orange); background: rgba(255,102,0,0.1);  border: 2px solid var(--orange); }
-    .dec-block    { color: var(--red);    background: rgba(255,68,68,0.1);   border: 2px solid var(--red); }
-    .dec-idle     { color: var(--muted);  background: rgba(100,116,139,0.1); border: 2px dashed #334155; }
+    .dec-allow    { color: var(--green);  background: rgba(22,163,74,0.1);   border: 2px solid var(--green); }
+    .dec-monitor  { color: var(--amber);  background: rgba(217,119,6,0.1);   border: 2px solid var(--amber); }
+    .dec-challenge{ color: var(--orange); background: rgba(234,88,12,0.1);   border: 2px solid var(--orange); }
+    .dec-block    { color: var(--red);    background: rgba(220,38,38,0.1);   border: 2px solid var(--red); }
+    .dec-idle     { color: var(--muted);  background: rgba(100,116,139,0.1); border: 2px dashed var(--border); }
 
     .justification { font-size: 0.82rem; color: var(--muted); margin-bottom: 14px; padding: 0 12px; min-height: 1.2em; }
 
@@ -357,7 +336,7 @@
       position: sticky;
       top: 0;
     }
-    .audit-table td { padding: 5px 6px; border-bottom: 1px solid rgba(30,45,69,0.6); vertical-align: middle; }
+    .audit-table td { padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .audit-row-allow    td { color: var(--green); }
     .audit-row-monitor  td { color: var(--amber); }
     .audit-row-challenge td { color: var(--orange); }
@@ -382,7 +361,6 @@
     }
     .export-btn:hover { background: rgba(200,168,75,0.1); }
 
-    /* ── Topology ── */
     .topology-section {
       padding: 16px 24px 24px;
       border-top: 1px solid var(--border);
@@ -401,6 +379,7 @@
       border-radius: 10px;
       padding: 10px;
       overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
     .topo-svg { width: 100%; display: block; }
 
@@ -425,22 +404,6 @@
   </style>
 </head>
 <body>
-
-<!-- Header -->
-<header class="header">
-  <div class="header-left">
-    <span class="header-crest">🏛️</span>
-    <div class="header-titles">
-      <span class="header-uni">Uganda Christian University — Mukono</span>
-      <span class="header-main">Risk-Adaptive Zero Trust — Live Demo</span>
-      <span class="header-sub">Okado Aaron Obbo &nbsp;|&nbsp; S24B23/015 &nbsp;|&nbsp; Systems, Infrastructure &amp; Cybersecurity</span>
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="header-clock" id="live-clock">00:00:00</div>
-    <div class="header-date"  id="live-date">Loading…</div>
-  </div>
-</header>
 
 <!-- Offline banner -->
 <div class="offline-banner" id="offline-banner">
@@ -728,65 +691,65 @@
   <div class="topology-wrap">
     <svg class="topo-svg" viewBox="0 0 1000 220" xmlns="http://www.w3.org/2000/svg" id="topo-svg">
       <!-- Background -->
-      <rect width="1000" height="220" fill="#111827"/>
+      <rect width="1000" height="220" fill="#f8fafc" rx="8"/>
 
-      <!-- Connection lines (default grey) -->
+      <!-- Connection lines (default light grey) -->
       <!-- Internet → ZTA Gateway -->
-      <line id="line-inet-zta" x1="118" y1="100" x2="262" y2="100" stroke="#1e2d45" stroke-width="2" stroke-dasharray="5,3"/>
+      <line id="line-inet-zta" x1="118" y1="100" x2="262" y2="100" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5,3"/>
       <!-- ZTA Gateway → Zeek Tap -->
-      <line id="line-zta-zeek" x1="338" y1="100" x2="418" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <line id="line-zta-zeek" x1="338" y1="100" x2="418" y2="100" stroke="#cbd5e1" stroke-width="2"/>
       <!-- Zeek Tap → Branch PC -->
-      <line id="line-zeek-branch" x1="494" y1="100" x2="590" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <line id="line-zeek-branch" x1="494" y1="100" x2="590" y2="100" stroke="#cbd5e1" stroke-width="2"/>
       <!-- ZTA Gateway → HQ Server (via top path) -->
-      <line id="line-zta-hq" x1="300" y1="80" x2="700" y2="80" stroke="#1e2d45" stroke-width="2" stroke-dasharray="4,2"/>
+      <line id="line-zta-hq" x1="300" y1="80" x2="700" y2="80" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4,2"/>
       <!-- Branch PC → HQ Server -->
-      <line id="line-branch-hq" x1="638" y1="100" x2="690" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <line id="line-branch-hq" x1="638" y1="100" x2="690" y2="100" stroke="#cbd5e1" stroke-width="2"/>
       <!-- HQ Server → DMZ Server -->
-      <line id="line-hq-dmz" x1="770" y1="100" x2="860" y2="100" stroke="#1e2d45" stroke-width="2"/>
+      <line id="line-hq-dmz" x1="770" y1="100" x2="860" y2="100" stroke="#cbd5e1" stroke-width="2"/>
       <!-- Branch PC → DMZ (diagonal for probe) -->
-      <line id="line-branch-dmz" x1="635" y1="115" x2="855" y2="115" stroke="#1e2d45" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+      <line id="line-branch-dmz" x1="635" y1="115" x2="855" y2="115" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
 
       <!-- Internet / Attacker node -->
-      <circle cx="80" cy="100" r="38" fill="#1a0505" stroke="#ff4444" stroke-width="2"/>
-      <text x="80" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#ff4444">🌐</text>
-      <text x="80" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ff4444" font-weight="600">Internet</text>
-      <text x="80" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#994444">203.0.113.10</text>
+      <circle cx="80" cy="100" r="38" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+      <text x="80" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#dc2626">🌐</text>
+      <text x="80" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#dc2626" font-weight="600">Internet</text>
+      <text x="80" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#991b1b">203.0.113.10</text>
 
       <!-- ZTA Gateway node -->
-      <rect x="263" y="70" width="74" height="60" rx="8" fill="#000d2e" stroke="#003087" stroke-width="2.5"/>
-      <text x="300" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#4488ff">🔐</text>
-      <text x="300" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#60a5fa" font-weight="700">ZTA Gateway</text>
-      <text x="300" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">Flask :5000</text>
+      <rect x="263" y="70" width="74" height="60" rx="8" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
+      <text x="300" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#1d4ed8">🔐</text>
+      <text x="300" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#1d4ed8" font-weight="700">ZTA Gateway</text>
+      <text x="300" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">Flask :5000</text>
 
       <!-- Zeek Tap -->
-      <rect x="419" y="82" width="74" height="36" rx="6" fill="#0d1420" stroke="#ffaa00" stroke-width="1.5"/>
-      <text x="456" y="98" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#ffaa00" font-weight="600">🔍 Zeek Tap</text>
-      <text x="456" y="109" text-anchor="middle" font-family="Inter,sans-serif" font-size="7" fill="#886600">Traffic Mirror</text>
+      <rect x="419" y="82" width="74" height="36" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+      <text x="456" y="98" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#d97706" font-weight="600">🔍 Zeek Tap</text>
+      <text x="456" y="109" text-anchor="middle" font-family="Inter,sans-serif" font-size="7" fill="#92400e">Traffic Mirror</text>
 
       <!-- Branch PC node -->
-      <circle cx="614" cy="100" r="38" fill="#001a0d" stroke="#00cc60" stroke-width="2"/>
-      <text x="614" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#00ff88">💻</text>
-      <text x="614" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#00cc60" font-weight="600">Branch PC</text>
-      <text x="614" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#006633">10.20.0.50</text>
+      <circle cx="614" cy="100" r="38" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+      <text x="614" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#16a34a">💻</text>
+      <text x="614" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#16a34a" font-weight="600">Branch PC</text>
+      <text x="614" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#166534">10.20.0.50</text>
 
       <!-- HQ Server node -->
-      <circle cx="730" cy="100" r="38" fill="#000d2e" stroke="#003087" stroke-width="2"/>
-      <text x="730" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#4488ff">🖥</text>
-      <text x="730" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#60a5fa" font-weight="600">HQ Server</text>
-      <text x="730" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">10.10.0.10</text>
+      <circle cx="730" cy="100" r="38" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="730" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#1d4ed8">🖥</text>
+      <text x="730" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#1d4ed8" font-weight="600">HQ Server</text>
+      <text x="730" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">10.10.0.10</text>
 
       <!-- DMZ Server node -->
-      <circle cx="900" cy="100" r="38" fill="#1a0d00" stroke="#ff6600" stroke-width="2"/>
-      <text x="900" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#ff9933">🛡</text>
-      <text x="900" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ff6600" font-weight="600">DMZ Server</text>
-      <text x="900" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#994400">172.16.0.10</text>
+      <circle cx="900" cy="100" r="38" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+      <text x="900" y="93" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#ea580c">🛡</text>
+      <text x="900" y="107" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" fill="#ea580c" font-weight="600">DMZ Server</text>
+      <text x="900" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#9a3412">172.16.0.10</text>
 
       <!-- Subnet labels -->
-      <text x="300" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">ZTA Policy Engine</text>
-      <text x="456" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#886600">Passive Mirror</text>
-      <text x="614" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#006633">10.20.0.0/24 (Branch)</text>
-      <text x="730" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#336699">10.10.0.0/24 (HQ)</text>
-      <text x="900" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#994400">172.16.0.0/24 (DMZ)</text>
+      <text x="300" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">ZTA Policy Engine</text>
+      <text x="456" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#d97706">Passive Mirror</text>
+      <text x="614" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#16a34a">10.20.0.0/24 (Branch)</text>
+      <text x="730" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3b82f6">10.10.0.0/24 (HQ)</text>
+      <text x="900" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#ea580c">172.16.0.0/24 (DMZ)</text>
 
       <!-- Animated packet (hidden by default) -->
       <circle id="topo-packet" r="6" fill="var(--green)" opacity="0" cx="80" cy="100">
@@ -812,20 +775,6 @@
   let classCounts    = { Normal: 0, DoS: 0, Probe: 0, R2L: 0, U2R: 0 };
   let decisionCounts = { ALLOW: 0, MONITOR: 0, CHALLENGE_MFA: 0, BLOCK: 0 };
   let _aeThresholdGlobal = null;
-
-  // ── Live Clock ────────────────────────────────────────────────────────────
-  function updateClock() {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    document.getElementById('live-clock').textContent = `${hh}:${mm}:${ss}`;
-    document.getElementById('live-date').textContent = now.toLocaleDateString('en-GB', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-  }
-  updateClock();
-  setInterval(updateClock, 1000);
 
   // ── Health Check ──────────────────────────────────────────────────────────
   async function checkHealth() {
@@ -1224,7 +1173,7 @@
      'line-hq-dmz','line-zta-hq','line-branch-dmz'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        el.setAttribute('stroke', '#1e2d45');
+        el.setAttribute('stroke', '#cbd5e1');
         el.setAttribute('stroke-width', '2');
       }
     });
